@@ -1,10 +1,6 @@
 How to Create your Custom Context Builder
 =========================================
 
-.. versionadded:: 6.1
-
-    Context builders were introduced in Symfony 6.1.
-
 That serialization process of the :doc:`Serializer Component </serializer>`
 can be configured by the :ref:`serialization context <serializer-context>`,
 which can be built thanks to :ref:`context builders <serializer-using-context-builders>`.

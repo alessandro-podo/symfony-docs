@@ -263,10 +263,6 @@ in performance, you can stop generating the file as follows:
         // ...
         $container->parameters()->set('debug.container.dump', false);
 
-.. versionadded:: 6.3
-
-    The ``debug.container.dump`` option was introduced in Symfony 6.3.
-
 .. _profiling-applications:
 
 Profiling Symfony Applications
@@ -366,6 +362,13 @@ method does, which stops an event and then restarts it immediately::
     // Lap information is stored as "periods" within the event:
     // $event->getPeriods();
 
+    // Gets the last event period:
+    // $event->getLastPeriod();
+
+.. versionadded:: 7.2
+
+    The ``getLastPeriod()`` method was introduced in Symfony 7.2.
+
 Profiling Sections
 ..................
 
@@ -386,9 +389,15 @@ All events that don't belong to any named section are added to the special secti
 called ``__root__``. This way you can get all stopwatch events, even if you don't
 know their names, as follows::
 
-    foreach($this->stopwatch->getSectionEvents('__root__') as $event) {
+    use Symfony\Component\Stopwatch\Stopwatch;
+
+    foreach($this->stopwatch->getSectionEvents(Stopwatch::ROOT) as $event) {
         echo (string) $event;
     }
+
+.. versionadded:: 7.2
+
+    The ``Stopwatch::ROOT`` constant as a shortcut for ``__root__`` was introduced in Symfony 7.2.
 
 Learn more
 ----------

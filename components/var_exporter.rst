@@ -177,25 +177,53 @@ populated by using the special ``"\0"`` property name to define their internal v
         "\0" => [$inputArray],
     ]);
 
-.. versionadded:: 6.2
-
-    The :class:`Symfony\\Component\\VarExporter\\Hydrator` was introduced in Symfony 6.2.
-
 Creating Lazy Objects
 ---------------------
 
-Lazy-objects are objects instantiated empty and populated on-demand. This is
-particularly useful when you have for example properties in your classes that
-requires some heavy computation to determine their value. In this case, you
-may want to trigger the property's value processing only when you actually need
-its value. Thanks to this, the heavy computation won't be done if you never use
-this property. The VarExporter component is bundled with two traits helping
-you implement such mechanism easily in your classes.
+Lazy objects are objects instantiated empty and populated on demand. This is
+particularly useful when, for example, a class has properties that require
+heavy computation to determine their values. In such cases, you may want to
+trigger the computation only when the property is actually accessed. This way,
+the expensive processing is avoided entirely if the property is never used.
+
+Since version 8.4, PHP provides support for lazy objects via the reflection API.
+This native API works with concrete classes, but not with abstract or internal ones.
+This component provides helpers to generate lazy objects using the decorator
+pattern, which also works with abstract classes, internal classes, and interfaces::
+
+    $proxyCode = ProxyHelper::generateLazyProxy(new \ReflectionClass(SomeInterface::class));
+    // $proxyCode should be dumped into a file in production environments
+    eval('class ProxyDecorator'.$proxyCode);
+
+    $proxy = ProxyDecorator::createLazyProxy(initializer: function (): SomeInterface {
+        // use whatever heavy logic you need here
+        // to compute the $dependencies of the proxied class
+        $instance = new SomeHeavyClass(...$dependencies);
+        // call setters, etc. if needed
+
+        return $instance;
+    });
+
+Use this mechanism only when native lazy objects cannot be leveraged
+(otherwise you'll get a deprecation notice).
+
+Legacy Creation of Lazy Objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using a PHP version earlier than 8.4, native lazy objects are not available.
+In these cases, the VarExporter component provides two traits that help you
+implement lazy-loading mechanisms in your classes.
 
 .. _var-exporter_ghost-objects:
 
 LazyGhostTrait
-~~~~~~~~~~~~~~
+..............
+
+.. deprecated:: 7.3
+
+    ``LazyGhostTrait`` is deprecated since Symfony 7.3. Use PHP 8.4's native lazy
+    objects instead. Note that using the trait with PHP versions earlier than 8.4
+    does not trigger a deprecation, to ease the transition.
 
 Ghost objects are empty objects, which see their properties populated the first
 time any method is called. Thanks to :class:`Symfony\\Component\\VarExporter\\LazyGhostTrait`,
@@ -224,12 +252,6 @@ initialized::
             // Compute $this->hash value with the passed data
         }
     }
-
-.. deprecated:: 6.4
-
-    Using an array of closures for property-based initialization in the
-    ``createLazyGhost()`` method is deprecated since Symfony 6.4. Pass
-    a single closure that initializes the whole object instead.
 
 :class:`Symfony\\Component\\VarExporter\\LazyGhostTrait` also allows to
 convert non-lazy classes to lazy ones::
@@ -274,35 +296,20 @@ While you never query ``$processor->hash`` value, heavy methods will never be
 triggered. But still, the ``$processor`` object exists and can be used in your
 code, passed to methods, functions, etc.
 
-Additionally and by adding two arguments to the initializer function, it is
-possible to initialize properties one-by-one::
-
-    $processor = LazyHashProcessor::createLazyGhost(initializer: function (HashProcessor $instance, string $propertyName, ?string $propertyScope): mixed {
-        if (HashProcessor::class === $propertyScope && 'hash' === $propertyName) {
-            // Return $hash value
-        }
-
-        // Then you can add more logic for the other properties
-    });
-
-.. deprecated:: 6.4
-
-   The use of ``propertyName`` and ``propertyScope`` in the initializer function
-   is deprecated since Symfony 6.4 and will be removed in Symfony 7.0.
-   The initializer should now handle the entire object initialization at once.
-
 Ghost objects unfortunately can't work with abstract classes or internal PHP
 classes. Nevertheless, the VarExporter component covers this need with the help
 of :ref:`Virtual Proxies <var-exporter_virtual-proxies>`.
 
-.. versionadded:: 6.2
-
-    The :class:`Symfony\\Component\\VarExporter\\LazyGhostTrait` was introduced in Symfony 6.2.
-
 .. _var-exporter_virtual-proxies:
 
 LazyProxyTrait
-~~~~~~~~~~~~~~
+..............
+
+.. deprecated:: 7.3
+
+    ``LazyProxyTrait`` is deprecated since Symfony 7.3. Use PHP 8.4's native lazy
+    objects instead. Note that using the trait with PHP versions earlier than 8.4
+    does not trigger a deprecation, to ease the transition.
 
 The purpose of virtual proxies in the same one as
 :ref:`ghost objects <var-exporter_ghost-objects>`, but their internal behavior is
@@ -363,11 +370,6 @@ code::
 Just like ghost objects, while you never query ``$processor->hash``, its value
 will not be computed. The main difference with ghost objects is that this time,
 a proxy of an abstract class was created. This also works with internal PHP class.
-
-.. versionadded:: 6.2
-
-    The :class:`Symfony\\Component\\VarExporter\\LazyProxyTrait` and
-    :class:`Symfony\\Component\\VarExporter\\ProxyHelper` were introduced in Symfony 6.2.
 
 .. _`OPcache`: https://www.php.net/opcache
 .. _`PSR-2`: https://www.php-fig.org/psr/psr-2/

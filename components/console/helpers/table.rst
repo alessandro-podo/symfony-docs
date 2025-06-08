@@ -192,10 +192,6 @@ This outputs:
     | Author: Charles Dickens      |
     +------------------------------+
 
-.. versionadded:: 6.1
-
-    Support for vertical rendering was introduced in Symfony 6.1.
-
 Customizing the Table Style
 ---------------------------
 
@@ -276,6 +272,26 @@ This outputs:
     ║ 960-425-059-0 │ The Lord of the Rings    │ J. R. R. Tolkien ║
     ║ 80-902734-1-6 │ And Then There Were None │ Agatha Christie  ║
     ╚═══════════════╧══════════════════════════╧══════════════════╝
+
+**Markdown**::
+
+    $table->setStyle('markdown');
+    $table->render();
+
+This outputs:
+
+.. code-block:: terminal
+
+    | ISBN          | Title                    | Author           |
+    |---------------|--------------------------|------------------|
+    | 99921-58-10-7 | Divine Comedy            | Dante Alighieri  |
+    | 9971-5-0210-0 | A Tale of Two Cities     | Charles Dickens  |
+    | 960-425-059-0 | The Lord of the Rings    | J. R. R. Tolkien |
+    | 80-902734-1-6 | And Then There Were None | Agatha Christie  |
+
+.. versionadded:: 7.3
+
+    The ``markdown`` style was introduced in Symfony 7.3.
 
 Making a Custom Table Style
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -45,10 +45,6 @@ All context options available for the JSON encoder are:
     If set to ``true`` returns the result as an array, returns a nested ``stdClass`` hierarchy otherwise.
 ``json_decode_detailed_errors`` (default: ``false``)
     If set to ``true`` exceptions thrown on parsing of JSON are more specific. Requires `seld/jsonlint`_ package.
-
-    .. versionadded:: 6.4
-
-        The ``json_decode_detailed_errors`` option was introduced in Symfony 6.4.
 ``json_decode_options`` (default: ``0``)
     Flags passed to :phpfunction:`json_decode` function.
 ``json_encode_options`` (default: ``\JSON_PRESERVE_ZERO_FRACTION``)
@@ -69,6 +65,11 @@ are available to customize the behavior of the encoder:
 ``csv_end_of_line`` (default: ``\n``)
     Sets the character(s) used to mark the end of each line in the CSV file.
 ``csv_escape_char`` (default: empty string)
+
+    .. deprecated:: 7.2
+
+        The ``csv_escape_char`` option was deprecated in Symfony 7.2.
+
     Sets the escape character (at most one character).
 ``csv_key_separator`` (default: ``.``)
     Sets the separator for array's keys during its flattening
@@ -195,20 +196,25 @@ These are the options available on the :ref:`serializer context <serializer-cont
     XML loading `options with libxml`_.
 ``save_options`` (default: ``0``)
     XML saving `options with libxml`_.
-
-    .. versionadded:: 6.3
-
-        The ``save_options`` option was introduced in Symfony 6.3.
 ``remove_empty_tags`` (default: ``false``)
     If set to ``true``, removes all empty tags in the generated XML.
 ``cdata_wrapping`` (default: ``true``)
     If set to ``false``, will not wrap any value containing one of the
     following characters ( ``<``, ``>``, ``&``) in `a CDATA section`_ like
     following: ``<![CDATA[...]]>``.
+``cdata_wrapping_pattern`` (default: ``/[<>&]/``)
+    A regular expression pattern to determine if a value should be wrapped
+    in a CDATA section.
+``ignore_empty_attributes`` (default: ``false``)
+    If set to true, ignores all attributes with empty values in the generated XML
 
-    .. versionadded:: 6.4
+.. versionadded:: 7.1
 
-        The ``cdata_wrapping`` option was introduced in Symfony 6.4.
+    The ``cdata_wrapping_pattern`` option was introduced in Symfony 7.1.
+
+.. versionadded:: 7.3
+
+    The ``ignore_empty_attributes`` option was introduced in Symfony 7.3.
 
 Example with a custom ``context``::
 

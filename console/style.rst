@@ -169,6 +169,32 @@ Content Methods
     styled according to the Symfony Style Guide, which allows you to use
     features such as dynamically appending rows.
 
+:method:`Symfony\\Component\\Console\\Style\\SymfonyStyle::tree`
+    It displays the given nested array as a formatted directory/file tree
+    structure in the console output::
+
+        $io->tree([
+            'src' =>  [
+                'Controller' => [
+                    'DefaultController.php',
+                ],
+                'Kernel.php',
+            ],
+            'templates' => [
+                'base.html.twig',
+            ],
+        ]);
+
+.. versionadded:: 7.3
+
+    The ``SymfonyStyle::tree()`` and the ``SymfonyStyle::createTree()`` methods
+    were introduced in Symfony 7.3.
+
+:method:`Symfony\\Component\\Console\\Style\\SymfonyStyle::createTree`
+    Creates an instance of :class:`Symfony\\Component\\Console\\Helper\\TreeHelper`
+    styled according to the Symfony Style Guide, which allows you to use
+    features such as dynamically nesting nodes.
+
 :method:`Symfony\\Component\\Console\\Style\\SymfonyStyle::newLine`
     It displays a blank line in the command output. Although it may seem useful,
     most of the times you won't need it at all. The reason is that every helper
@@ -333,10 +359,6 @@ User Input Methods
 
         $io->choice('Select the queue to analyze', ['queue1', 'queue2', 'queue3'], multiSelect: true);
 
-.. versionadded:: 6.2
-
-    The ``multiSelect`` option of ``choice()`` was introduced in Symfony 6.2.
-
 .. _symfony-style-blocks:
 
 Result Methods
@@ -444,10 +466,6 @@ If you prefer to wrap all contents, including URLs, use this method::
             // ...
         }
     }
-
-.. versionadded:: 6.2
-
-    The ``setAllowCutUrls()`` method was introduced in Symfony 6.2.
 
 Defining your Own Styles
 ------------------------

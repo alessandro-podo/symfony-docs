@@ -8,8 +8,6 @@ The ``PasswordType`` field renders an input password text box.
 +---------------------------+------------------------------------------------------------------------+
 | Default invalid message   | The password is invalid.                                               |
 +---------------------------+------------------------------------------------------------------------+
-| Legacy invalid message    | The value {{ value }} is not valid.                                    |
-+---------------------------+------------------------------------------------------------------------+
 | Parent type               | :doc:`TextType </reference/forms/types/text>`                          |
 +---------------------------+------------------------------------------------------------------------+
 | Class                     | :class:`Symfony\\Component\\Form\\Extension\\Core\\Type\\PasswordType` |
@@ -36,10 +34,6 @@ entered into the box, set this to false and submit the form.
 ~~~~~~~~~~~~~~~~~~~~~~
 
 **type**: ``string`` **default**: ``null``
-
-.. versionadded:: 6.2
-
-    The ``hash_property_path`` option was introduced in Symfony 6.2.
 
 If set, the password will be hashed using the
 :doc:`PasswordHasher component </security/passwords>` and stored in the

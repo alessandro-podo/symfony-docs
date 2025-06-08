@@ -21,6 +21,8 @@ displayed to the user::
     namespace App\Security;
 
     use App\Entity\User as AppUser;
+    use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+    use Symfony\Component\Security\Core\Exception\AccessDeniedException;
     use Symfony\Component\Security\Core\Exception\AccountExpiredException;
     use Symfony\Component\Security\Core\Exception\CustomUserMessageAccountStatusException;
     use Symfony\Component\Security\Core\User\UserCheckerInterface;
@@ -40,7 +42,7 @@ displayed to the user::
             }
         }
 
-        public function checkPostAuth(UserInterface $user): void
+        public function checkPostAuth(UserInterface $user, TokenInterface $token): void
         {
             if (!$user instanceof AppUser) {
                 return;
@@ -50,8 +52,16 @@ displayed to the user::
             if ($user->isExpired()) {
                 throw new AccountExpiredException('...');
             }
+
+            if (!\in_array('foo', $token->getRoleNames())) {
+                throw new AccessDeniedException('...');
+            }
         }
     }
+
+.. versionadded:: 7.2
+
+    The ``token`` argument for the ``checkPostAuth()`` method was introduced in Symfony 7.2.
 
 Enabling the Custom User Checker
 --------------------------------
@@ -116,10 +126,6 @@ is the service id of your user checker:
 
 Using Multiple User Checkers
 ----------------------------
-
-.. versionadded:: 6.2
-
-    The ``ChainUserChecker`` class was added in Symfony 6.2.
 
 It is common for applications to have multiple authentication entry points (such as
 traditional form based login and an API) which may have unique checker rules for each

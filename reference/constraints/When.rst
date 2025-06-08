@@ -1,10 +1,6 @@
 When
 ====
 
-.. versionadded:: 6.2
-
-    The ``When`` constraint was introduced in Symfony 6.2.
-
 This constraint allows you to apply constraints validation only if the
 provided expression returns true. See `Basic Usage`_ for an example.
 
@@ -13,6 +9,7 @@ Applies to  :ref:`class <validation-class-target>`
             or :ref:`property/method <validation-property-target>`
 Options     - `expression`_
             - `constraints`_
+            _ `otherwise`_
             - `groups`_
             - `payload`_
             - `values`_
@@ -51,7 +48,7 @@ properties::
 To validate the object, you have some requirements:
 
 A) If ``type`` is ``percent``, then ``value`` must be less than or equal 100;
-B) If ``type`` is ``absolute``, then ``value`` can be anything;
+B) If ``type`` is not ``percent``, then ``value`` must be less than 9999;
 C) No matter the value of ``type``, the ``value`` must be greater than 0.
 
 One way to accomplish this is with the When constraint:
@@ -73,6 +70,9 @@ One way to accomplish this is with the When constraint:
                 constraints: [
                     new Assert\LessThanOrEqual(100, message: 'The value should be between 1 and 100!')
                 ],
+                otherwise: [
+                    new Assert\LessThan(9999, message: 'The value should be less than 9999!')
+                ],
             )]
             private ?int $value;
 
@@ -92,6 +92,10 @@ One way to accomplish this is with the When constraint:
                             - LessThanOrEqual:
                                 value: 100
                                 message: "The value should be between 1 and 100!"
+                        otherwise:
+                            - LessThan:
+                                value: 9999
+                                message: "The value should be less than 9999!"
 
     .. code-block:: xml
 
@@ -113,6 +117,12 @@ One way to accomplish this is with the When constraint:
                                 <option name="message">The value should be between 1 and 100!</option>
                             </constraint>
                         </option>
+                        <option name="otherwise">
+                            <constraint name="LessThan">
+                                <option name="value">9999</option>
+                                <option name="message">The value should be less than 9999!</option>
+                            </constraint>
+                        </option>
                     </constraint>
                 </property>
             </class>
@@ -131,15 +141,21 @@ One way to accomplish this is with the When constraint:
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
                 $metadata->addPropertyConstraint('value', new Assert\GreaterThan(0));
-                $metadata->addPropertyConstraint('value', new Assert\When([
-                    'expression' => 'this.getType() == "percent"',
-                    'constraints' => [
-                        new Assert\LessThanOrEqual([
-                            'value' => 100,
-                            'message' => 'The value should be between 1 and 100!',
-                        ]),
+                $metadata->addPropertyConstraint('value', new Assert\When(
+                    expression: 'this.getType() == "percent"',
+                    constraints: [
+                        new Assert\LessThanOrEqual(
+                            value: 100,
+                            message: 'The value should be between 1 and 100!',
+                        ),
                     ],
-                ]));
+                    otherwise: [
+                        new Assert\LessThan(
+                            value: 9999,
+                            message: 'The value should be less than 9999!',
+                        ),
+                    ],
+                ));
             }
 
             // ...
@@ -158,26 +174,36 @@ Options
 ``expression``
 ~~~~~~~~~~~~~~
 
-**type**: ``string``
+**type**: ``string|Closure``
 
-The condition written with the expression language syntax that will be evaluated.
-If the expression evaluates to a falsey value (i.e. using ``==``, not ``===``),
-validation of constraints won't be triggered.
+The condition evaluated to decide if the constraint is applied or not. It can be
+defined as a closure or a string using the :doc:`expression language syntax </reference/formats/expression_language>`.
+If the result is a falsey value (``false``, ``null``, ``0``, an empty string or
+an empty array) the constraints defined in the ``constraints`` option won't be
+applied but the constraints defined in ``otherwise`` option (if provided) will be applied.
 
-To learn more about the expression language syntax, see
-:doc:`/reference/formats/expression_language`.
-
-Depending on how you use the constraint, you have access to 1 or 2 variables
-in your expression:
+**When using an expression**, you access to the following variables:
 
 ``this``
     The object being validated (e.g. an instance of Discount).
 ``value``
     The value of the property being validated (only available when
     the constraint is applied to a property).
+``context``
+    The :class:`Symfony\\Component\\Validator\\Context\\ExecutionContextInterface`
+    object that provides information such as the currently validated class, the
+    name of the currently validated property, the list of violations, etc.
 
-The ``value`` variable can be used when you want to execute more complex
-validation based on its value:
+.. versionadded:: 7.2
+
+    The ``context`` variable in expressions was introduced in Symfony 7.2.
+
+**When using a closure**, the first argument is the object being validated.
+
+.. versionadded:: 7.3
+
+    The support for closures in the ``expression`` option was introduced in Symfony 7.3
+    and requires PHP 8.5.
 
 .. configuration-block::
 
@@ -191,11 +217,21 @@ validation based on its value:
 
         class Discount
         {
+            // either using an expression...
             #[Assert\When(
                 expression: 'value == "percent"',
                 constraints: [new Assert\Callback('doComplexValidation')],
             )]
+
+            // ... or using a closure
+            #[Assert\When(
+                expression: static function (Discount $discount) {
+                    return $discount->getType() === 'percent';
+                },
+                constraints: [new Assert\Callback('doComplexValidation')],
+            )]
             private ?string $type;
+
             // ...
 
             public function doComplexValidation(ExecutionContextInterface $context, $payload): void
@@ -252,12 +288,12 @@ validation based on its value:
 
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
-                $metadata->addPropertyConstraint('type', new Assert\When([
-                    'expression' => 'value == "percent"',
-                    'constraints' => [
+                $metadata->addPropertyConstraint('type', new Assert\When(
+                    expression: 'value == "percent"',
+                    constraints: [
                         new Assert\Callback('doComplexValidation'),
                     ],
-                ]));
+                ));
             }
 
             public function doComplexValidation(ExecutionContextInterface $context, $payload): void
@@ -275,9 +311,16 @@ You can also pass custom variables using the `values`_ option.
 
 One or multiple constraints that are applied if the expression returns true.
 
-.. versionadded:: 6.4
+``otherwise``
+~~~~~~~~~~~~~
 
-    Passing a single ``Constraint`` instead of an array was introduced in Symfony 6.4.
+**type**: ``array|Constraint``
+
+One or multiple constraints that are applied if the expression returns false.
+
+.. versionadded:: 7.3
+
+    The ``otherwise`` option was introduced in Symfony 7.3.
 
 .. include:: /reference/constraints/_groups-option.rst.inc
 

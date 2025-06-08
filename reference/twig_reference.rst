@@ -187,16 +187,37 @@ is_granted
 
 .. code-block:: twig
 
-    {{ is_granted(role, object = null, field = null) }}
+    {{ is_granted(role, object = null) }}
 
 ``role``
     **type**: ``string``
 ``object`` *(optional)*
     **type**: ``object``
-``field`` *(optional)*
-    **type**: ``string``
 
 Returns ``true`` if the current user has the given role.
+
+Optionally, an object can be passed to be used by the voter. More information
+can be found in :ref:`security-template`.
+
+is_granted_for_user
+~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 7.3
+
+    The ``is_granted_for_user()`` function was introduced in Symfony 7.3.
+
+.. code-block:: twig
+
+    {{ is_granted_for_user(user, attribute, subject = null) }}
+
+``user``
+    **type**: ``object``
+``attribute``
+    **type**: ``string``
+``subject`` *(optional)*
+    **type**: ``object``
+
+Returns ``true`` if the user is authorized for the specified attribute.
 
 Optionally, an object can be passed to be used by the voter. More information
 can be found in :ref:`security-template`.
@@ -404,10 +425,6 @@ Generates a URL that you can visit to
 :doc:`impersonate a user </security/impersonating_user>`, identified by the
 ``identifier`` argument.
 
-.. versionadded:: 6.4
-
-    The ``impersonation_path()`` function was introduced in Symfony 6.4.
-
 impersonation_url
 ~~~~~~~~~~~~~~~~~
 
@@ -420,10 +437,6 @@ impersonation_url
 
 It's similar to the `impersonation_path`_ function, but it generates
 absolute URLs instead of relative URLs.
-
-.. versionadded:: 6.4
-
-    The ``impersonation_url()`` function was introduced in Symfony 6.4.
 
 impersonation_exit_path
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -531,6 +544,7 @@ explained in the article about :doc:`customizing form rendering </form/form_cust
 * :ref:`form_row() <reference-forms-twig-row>`
 * :ref:`form_rest() <reference-forms-twig-rest>`
 * :ref:`field_name() <reference-forms-twig-field-helpers>`
+* :ref:`field_id() <reference-forms-twig-field-helpers>`
 * :ref:`field_value() <reference-forms-twig-field-helpers>`
 * :ref:`field_label() <reference-forms-twig-field-helpers>`
 * :ref:`field_help() <reference-forms-twig-field-helpers>`
@@ -626,10 +640,6 @@ Using the filter will be rendered as:
 
 sanitize_html
 ~~~~~~~~~~~~~
-
-.. versionadded:: 6.1
-
-    The ``sanitize_html()`` filter was introduced in Symfony 6.1.
 
 .. code-block:: twig
 
@@ -994,6 +1004,37 @@ For example::
         'empty_array_as_object': true,
     }) }}
     {# output: {"foo":"bar","content":{},"createdAt":"Sat, 2024-11-30"} #}
+
+.. _reference-twig-filter-emojify:
+
+emojify
+~~~~~~~
+
+.. versionadded:: 7.1
+
+    The ``emojify`` filter was introduced in Symfony 7.1.
+
+.. code-block:: twig
+
+    {{ text|emojify(catalog = null) }}
+
+``text``
+    **type**: ``string``
+
+``catalog`` *(optional)*
+    **type**: ``string`` | ``null``
+
+    The emoji set used to generate the textual representation (``slack``,
+    ``github``, ``gitlab``, etc.)
+
+It transforms the textual representation of an emoji (e.g. ``:wave:``) into the
+actual emoji (👋):
+
+.. code-block:: twig
+
+    {{ ':+1:'|emojify }}                 {# renders: 👍 #}
+    {{ ':+1:'|emojify('github') }}       {# renders: 👍 #}
+    {{ ':thumbsup:'|emojify('gitlab') }} {# renders: 👍 #}
 
 .. _reference-twig-tags:
 

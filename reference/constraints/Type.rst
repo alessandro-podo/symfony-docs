@@ -127,14 +127,14 @@ The following example checks if ``emailAddress`` is an instance of ``Symfony\Com
 
                 $metadata->addPropertyConstraint('firstName', new Assert\Type('string'));
 
-                $metadata->addPropertyConstraint('age', new Assert\Type([
-                    'type' => 'integer',
-                    'message' => 'The value {{ value }} is not a valid {{ type }}.',
-                ]));
+                $metadata->addPropertyConstraint('age', new Assert\Type(
+                    type: 'integer',
+                    message: 'The value {{ value }} is not a valid {{ type }}.',
+                ));
 
-                $metadata->addPropertyConstraint('accessCode', new Assert\Type([
-                    'type' => ['alpha', 'digit'],
-                ]));
+                $metadata->addPropertyConstraint('accessCode', new Assert\Type(
+                    type: ['alpha', 'digit'],
+                ));
             }
         }
 
@@ -169,7 +169,7 @@ Parameter        Description
 ``type``
 ~~~~~~~~
 
-**type**: ``string`` or ``array`` [:ref:`default option <validation-default-option>`]
+**type**: ``string`` or ``array``
 
 This required option defines the type or collection of types allowed for the
 given value. Each type is either the FQCN (fully qualified class name) of some
@@ -194,6 +194,11 @@ PHP class/interface or a valid PHP datatype (checked by PHP's ``is_()`` function
 * :phpfunction:`resource <is_resource>`
 * :phpfunction:`null <is_null>`
 
+If you're dealing with arrays, you can use the following types in the constraint:
+
+* ``list`` which uses :phpfunction:`array_is_list <array_is_list>` internally
+* ``associative_array`` which is true for any **non-empty** array that is not a list
+
 Also, you can use ``ctype_*()`` functions from corresponding
 `built-in PHP extension`_. Consider `a list of ctype functions`_:
 
@@ -212,15 +217,16 @@ Also, you can use ``ctype_*()`` functions from corresponding
 Make sure that the proper :phpfunction:`locale <setlocale>` is set before
 using one of these.
 
+.. versionadded:: 7.1
+
+    The ``list`` and ``associative_array`` types were introduced in Symfony
+    7.1.
+
 Finally, you can use aggregated functions:
 
 * ``number``: ``is_int || is_float && !is_nan``
 * ``finite-float``: ``is_float && is_finite``
 * ``finite-number``: ``is_int || is_float && is_finite``
-
-.. versionadded:: 6.4
-
-    ``number``, ``finite-float`` and ``finite-number`` were introduced in Symfony 6.4.
 
 .. _built-in PHP extension: https://www.php.net/book.ctype
 .. _a list of ctype functions: https://www.php.net/ref.ctype

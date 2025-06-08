@@ -32,7 +32,7 @@ Partial search is also available:
 .. code-block:: terminal
 
     $ php bin/console debug:container --tag=kernel
-    
+
     Select one of the following tags to display its information:
      [0] kernel.event_listener
      [1] kernel.event_subscriber
@@ -41,10 +41,6 @@ Partial search is also available:
      [4] kernel.locale_aware
      [5] kernel.fragment_renderer
      [6] kernel.cache_clearer
-
-.. versionadded:: 6.2
-
-    The partial search was introduced in Symfony 6.2.
 
 Detailed Info about a Single Service
 ------------------------------------
@@ -56,5 +52,8 @@ its id:
 
     $ php bin/console debug:container App\Service\Mailer
 
-    # to show the service arguments:
-    $ php bin/console debug:container App\Service\Mailer --show-arguments
+.. deprecated:: 7.3
+
+    Starting in Symfony 7.3, this command displays the service arguments by default.
+    In earlier Symfony versions, you needed to use the ``--show-arguments`` option,
+    which is now deprecated.

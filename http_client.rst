@@ -150,9 +150,17 @@ brings most of the available options with type-hinted getters and setters::
     $this->client = $client->withOptions(
         (new HttpOptions())
             ->setBaseUri('https://...')
+            // replaces *all* headers at once, and deletes the headers you do not provide
             ->setHeaders(['header-name' => 'header-value'])
+            // set or replace a single header using setHeader()
+            ->setHeader('another-header-name', 'another-header-value')
             ->toArray()
     );
+
+.. versionadded:: 7.1
+
+    The :method:`Symfony\\Component\\HttpClient\\HttpOptions::setHeader`
+    method was introduced in Symfony 7.1.
 
 Some options are described in this guide:
 
@@ -639,13 +647,6 @@ of the opened file, but you can configure both with the PHP streaming configurat
     stream_context_set_option($fileHandle, 'http', 'filename', 'the-name.txt');
     stream_context_set_option($fileHandle, 'http', 'content_type', 'my/content-type');
 
-.. versionadded:: 6.3
-
-    The feature to upload files using handles was introduced in Symfony 6.3.
-    In previous Symfony versions you had to encode the body contents according
-    to the ``multipart/form-data`` content-type using the :doc:`Symfony Mime </components/mime>`
-    component.
-
 .. tip::
 
     When using multidimensional arrays the :class:`Symfony\\Component\\Mime\\Part\\Multipart\\FormDataPart`
@@ -743,10 +744,6 @@ when using any HTTP method and ``500``, ``504``, ``507`` and ``510`` when using
 an HTTP `idempotent method`_. Use the ``max_retries`` setting to configure the
 amount of times a request is retried.
 
-.. versionadded:: 6.4
-
-    The ``max_retries`` options was introduced in Symfony 6.4.
-
 Check out the full list of configurable :ref:`retry_failed options <reference-http-client-retry-failed>`
 to learn how to tweak each of them to fit your application needs.
 
@@ -765,10 +762,6 @@ each retry.
 
 Retry Over Several Base URIs
 ............................
-
-.. versionadded:: 6.3
-
-    The multiple ``base_uri`` feature was added in Symfony 6.3.
 
 The ``RetryableHttpClient`` can be configured to use multiple base URIs. This
 feature provides increased flexibility and reliability for making HTTP
@@ -987,11 +980,6 @@ of your application:
 If you want to define your own logic to handle variables of URI templates, you
 can do so by redefining the ``http_client.uri_template_expander`` alias. Your
 service must be invokable.
-
-.. versionadded:: 6.3
-
-    The :class:`Symfony\\Component\\HttpClient\\UriTemplateHttpClient` was
-    introduced in Symfony 6.3.
 
 Performance
 -----------
@@ -1509,6 +1497,114 @@ installed in your application::
 :class:`Symfony\\Component\\HttpClient\\CachingHttpClient` accepts a third argument
 to set the options of the :class:`Symfony\\Component\\HttpKernel\\HttpCache\\HttpCache`.
 
+Limit the Number of Requests
+----------------------------
+
+This component provides a :class:`Symfony\\Component\\HttpClient\\ThrottlingHttpClient`
+decorator that allows to limit the number of requests within a certain period,
+potentially delaying calls based on the rate limiting policy.
+
+The implementation leverages the
+:class:`Symfony\\Component\\RateLimiter\\LimiterInterface` class under the hood
+so the :doc:`Rate Limiter component </rate_limiter>` needs to be
+installed in your application::
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/framework.yaml
+        framework:
+            http_client:
+                scoped_clients:
+                    example.client:
+                        base_uri: 'https://example.com'
+                        rate_limiter: 'http_example_limiter'
+
+            rate_limiter:
+                # Don't send more than 10 requests in 5 seconds
+                http_example_limiter:
+                    policy: 'token_bucket'
+                    limit: 10
+                    rate: { interval: '5 seconds', amount: 10 }
+
+    .. code-block:: xml
+
+        <!-- config/packages/framework.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                https://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/symfony https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+            <framework:config>
+                <framework:http-client>
+                    <framework:scoped-client name="example.client"
+                        base-uri="https://example.com"
+                        rate-limiter="http_example_limiter"
+                    />
+                </framework:http-client>
+
+                <framework:rate-limiter>
+                    <!-- Don't send more than 10 requests in 5 seconds -->
+                    <framework:limiter name="http_example_limiter"
+                        policy="token_bucket"
+                        limit="10"
+                    >
+                        <framework:rate interval="5 seconds" amount="10"/>
+                    </framework:limiter>
+                </framework:rate-limiter>
+            </framework:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/framework.php
+        use Symfony\Config\FrameworkConfig;
+
+        return static function (FrameworkConfig $framework): void {
+            $framework->httpClient()->scopedClient('example.client')
+                ->baseUri('https://example.com')
+                ->rateLimiter('http_example_limiter');
+                // ...
+            ;
+
+            $framework->rateLimiter()
+                // Don't send more than 10 requests in 5 seconds
+                ->limiter('http_example_limiter')
+                    ->policy('token_bucket')
+                    ->limit(10)
+                    ->rate()
+                        ->interval('5 seconds')
+                        ->amount(10)
+                ;
+        };
+
+    .. code-block:: php-standalone
+
+        use Symfony\Component\HttpClient\HttpClient;
+        use Symfony\Component\HttpClient\ThrottlingHttpClient;
+        use Symfony\Component\RateLimiter\RateLimiterFactory;
+        use Symfony\Component\RateLimiter\Storage\InMemoryStorage;
+
+        $factory = new RateLimiterFactory([
+            'id' => 'http_example_limiter',
+            'policy' => 'token_bucket',
+            'limit' => 10,
+            'rate' => ['interval' => '5 seconds', 'amount' => 10],
+        ], new InMemoryStorage());
+        $limiter = $factory->create();
+
+        $client = HttpClient::createForBaseUri('https://example.com');
+        $throttlingClient = new ThrottlingHttpClient($client, $limiter);
+
+.. versionadded:: 7.1
+
+    The :class:`Symfony\\Component\\HttpClient\\ThrottlingHttpClient` was
+    introduced in Symfony 7.1.
+
 Consuming Server-Sent Events
 ----------------------------
 
@@ -1562,10 +1658,6 @@ to wrap your HTTP client, open a connection to a server that responds with a
     If you know that the content of the ``ServerSentEvent`` is in the JSON format, you can
     use the :method:`Symfony\\Component\\HttpClient\\Chunk\\ServerSentEvent::getArrayData`
     method to directly get the decoded JSON as array.
-
-.. versionadded:: 6.3
-
-    The ``ServerSentEvent::getArrayData()`` method was introduced in Symfony 6.3.
 
 Interoperability
 ----------------
@@ -1684,10 +1776,6 @@ You can also pass a set of default options to your client thanks to the
 
     // ...
 
-.. versionadded:: 6.2
-
-    The ``Psr18Client::withOptions()`` method was introduced in Symfony 6.2.
-
 HTTPlug
 ~~~~~~~
 
@@ -1788,10 +1876,6 @@ You can also pass a set of default options to your client thanks to the
     $request = $httpClient->createRequest('GET', '/');
 
     // ...
-
-.. versionadded:: 6.2
-
-    The ``HttplugClient::withOptions()`` method was introduced in Symfony 6.2.
 
 Native PHP Streams
 ~~~~~~~~~~~~~~~~~~
@@ -1959,6 +2043,20 @@ in order when requests are made::
     // responses are returned in the same order as passed to MockHttpClient
     $response1 = $client->request('...'); // returns $responses[0]
     $response2 = $client->request('...'); // returns $responses[1]
+
+It is also possible to create a
+:class:`Symfony\\Component\\HttpClient\\Response\\MockResponse` directly
+from a file, which is particularly useful when storing your response
+snapshots in files::
+
+    use Symfony\Component\HttpClient\Response\MockResponse;
+
+    $response = MockResponse::fromFile('tests/fixtures/response.xml');
+
+.. versionadded:: 7.1
+
+    The :method:`Symfony\\Component\\HttpClient\\Response\\MockResponse::fromFile`
+    method was introduced in Symfony 7.1.
 
 Another way of using :class:`Symfony\\Component\\HttpClient\\MockHttpClient` is to
 pass a callback that generates the responses dynamically when it's called::
@@ -2134,9 +2232,18 @@ You can use :class:`Symfony\\Component\\HttpClient\\Response\\JsonMockResponse` 
         'foo' => 'bar',
     ]);
 
-.. versionadded:: 6.3
+Just like :class:`Symfony\\Component\\HttpClient\\Response\\MockResponse`, you can
+also create a :class:`Symfony\\Component\\HttpClient\\Response\\JsonMockResponse`
+directly from a file::
 
-    The ``JsonMockResponse`` was introduced in Symfony 6.3.
+    use Symfony\Component\HttpClient\Response\JsonMockResponse;
+
+    $response = JsonMockResponse::fromFile('tests/fixtures/response.json');
+
+.. versionadded:: 7.1
+
+    The :method:`Symfony\\Component\\HttpClient\\Response\\JsonMockResponse::fromFile`
+    method was introduced in Symfony 7.1.
 
 Testing Request Data
 ~~~~~~~~~~~~~~~~~~~~
@@ -2289,10 +2396,6 @@ will find the associated response based on the request method, URL and body (if 
 Note that **this won't work** if the request body or URI is random / always
 changing (e.g. if it contains current date or random UUIDs).
 
-.. versionadded:: 6.4
-
-    The ``HarFileResponseFactory`` was introduced in Symfony 6.4.
-
 Testing Network Transport Exceptions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2363,12 +2466,6 @@ body::
             }
         }
     }
-
-.. versionadded:: 6.1
-
-    Being allowed to pass an exception directly to the body of a
-    :class:`Symfony\\Component\\HttpClient\\Response\\MockResponse` was
-    introduced in Symfony 6.1.
 
 .. _`cURL PHP extension`: https://www.php.net/curl
 .. _`Zlib PHP extension`: https://www.php.net/zlib

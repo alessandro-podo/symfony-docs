@@ -26,14 +26,6 @@ until you interact with the proxy in some way.
     Lazy services do not support `final`_ or ``readonly`` classes, but you can use
     `Interface Proxifying`_ to work around this limitation.
 
-    In PHP versions prior to 8.0 lazy services do not support parameters with
-    default values for built-in PHP classes (e.g. ``PDO``).
-
-.. versionadded:: 6.2
-
-    Starting from Symfony 6.2, service laziness is supported out of the box
-    without having to install any additional package.
-
 .. _lazy-services_configuration:
 
 Configuration
@@ -83,11 +75,6 @@ same signature of the class representing the service should be injected. A lazy
 itself when being accessed for the first time). The same happens when calling
 ``Container::get()`` directly.
 
-To check if your lazy service works you can check the interface of the received object::
-
-    dump(class_implements($service));
-    // the output should include "Symfony\Component\VarExporter\LazyObjectInterface"
-
 You can also configure your service's laziness thanks to the
 :class:`Symfony\\Component\\DependencyInjection\\Attribute\\Autoconfigure` attribute.
 For example, to define your service as lazy use the following::
@@ -129,10 +116,31 @@ laziness, and supports lazy-autowiring of union types::
     ) {
     }
 
-.. versionadded:: 6.3
+Another possibility is to use the :class:`Symfony\\Component\\DependencyInjection\\Attribute\\Lazy` attribute::
 
-    The ``lazy`` argument of the ``#[Autowire]`` attribute was introduced in
-    Symfony 6.3.
+    namespace App\Twig;
+
+    use Symfony\Component\DependencyInjection\Attribute\Lazy;
+    use Twig\Extension\ExtensionInterface;
+
+    #[Lazy]
+    class AppExtension implements ExtensionInterface
+    {
+        // ...
+    }
+
+This attribute can be applied to both class and parameters that should be lazy-loaded.
+It defines an optional parameter used to define interfaces for proxy and intersection types::
+
+    public function __construct(
+        #[Lazy(FooInterface::class)]
+        FooInterface|BarInterface $foo,
+    ) {
+    }
+
+.. versionadded:: 7.1
+
+    The ``#[Lazy]`` attribute was introduced in Symfony 7.1.
 
 Interface Proxifying
 --------------------

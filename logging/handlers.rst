@@ -24,7 +24,7 @@ To use it, declare it as a service:
                     $endpoint: "http://127.0.0.1:9200"
                     $index: "monolog"
                     $client: null
-                    $level: !php/const Monolog\Logger::DEBUG
+                    $level: !php/enum Monolog\Level::Debug
                     $bubble: true
                     $elasticsearchVersion: '1.0.0'
 
@@ -48,7 +48,7 @@ To use it, declare it as a service:
                     <argument key="endpoint">http://127.0.0.1:9200</argument>
                     <argument key="index">monolog</argument>
                     <argument key="client"/>
-                    <argument key="level" type="constant">Monolog\Logger::DEBUG</argument>
+                    <argument key="level" type="enum">Monolog\Level::Debug</argument>
                     <argument key="bubble">true</argument>
                     <argument key="elasticsearchVersion">1.0.0</argument>
                 </service>
@@ -58,7 +58,7 @@ To use it, declare it as a service:
     .. code-block:: php
 
         // config/services.php
-        use Monolog\Logger;
+        use Monolog\Level;
         use Symfony\Bridge\Monolog\Handler\ElasticsearchLogstashHandler;
 
         $container->register(ElasticsearchLogstashHandler::class);
@@ -69,7 +69,7 @@ To use it, declare it as a service:
                 '$endpoint' => "http://127.0.0.1:9200",
                 '$index' => "monolog",
                 '$client' => null,
-                '$level' => Logger::DEBUG,
+                '$level' => Level::Debug,
                 '$bubble' => true,
                 '$elasticsearchVersion' => '1.0.0',
             ])

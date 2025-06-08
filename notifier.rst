@@ -33,7 +33,14 @@ The notifier component supports the following channels:
   services like Slack and Telegram;
 * :ref:`Email channel <notifier-email-channel>` integrates the :doc:`Symfony Mailer </mailer>`;
 * Browser channel uses :ref:`flash messages <flash-messages>`.
-* :ref:`Push channel <notifier-push-channel>` sends notifications to phones and browsers via push notifications.
+* :ref:`Push channel <notifier-push-channel>` sends notifications to phones and
+  browsers via push notifications.
+* :ref:`Desktop channel <notifier-desktop-channel>` displays desktop notifications
+  on the same host machine.
+
+.. versionadded:: 7.2
+
+    The ``Desktop`` channel was introduced in Symfony 7.2.
 
 .. _notifier-sms-channel:
 
@@ -61,6 +68,7 @@ Service
 `AllMySms`_         **Install**: ``composer require symfony/all-my-sms-notifier`` \
                     **DSN**: ``allmysms://LOGIN:APIKEY@default?from=FROM`` \
                     **Webhook support**: No
+                    **Extra properties in SentMessage**: ``nbSms``, ``balance``, ``cost``
 `AmazonSns`_        **Install**: ``composer require symfony/amazon-sns-notifier`` \
                     **DSN**: ``sns://ACCESS_KEY:SECRET_KEY@default?region=REGION`` \
                     **Webhook support**: No
@@ -69,7 +77,7 @@ Service
                     **Webhook support**: No
 `Brevo`_            **Install**: ``composer require symfony/brevo-notifier`` \
                     **DSN**: ``brevo://API_KEY@default?sender=SENDER`` \
-                    **Webhook support**: No
+                    **Webhook support**: Yes
 `Clickatell`_       **Install**: ``composer require symfony/clickatell-notifier`` \
                     **DSN**: ``clickatell://ACCESS_TOKEN@default?from=FROM`` \
                     **Webhook support**: No
@@ -106,6 +114,9 @@ Service
 `LightSms`_         **Install**: ``composer require symfony/light-sms-notifier`` \
                     **DSN**: ``lightsms://LOGIN:TOKEN@default?from=PHONE`` \
                     **Webhook support**: No
+`LOX24`_            **Install**: ``composer require symfony/lox24-notifier`` \
+                    **DSN**: ``lox24://USER:TOKEN@default?from=FROM`` \
+                    **Webhook support**: No
 `Mailjet`_          **Install**: ``composer require symfony/mailjet-notifier`` \
                     **DSN**: ``mailjet://TOKEN@default?from=FROM`` \
                     **Webhook support**: No
@@ -129,8 +140,12 @@ Service
 `OvhCloud`_         **Install**: ``composer require symfony/ovh-cloud-notifier`` \
                     **DSN**: ``ovhcloud://APPLICATION_KEY:APPLICATION_SECRET@default?consumer_key=CONSUMER_KEY&service_name=SERVICE_NAME`` \
                     **Webhook support**: No
+                    **Extra properties in SentMessage**:: ``totalCreditsRemoved``
 `Plivo`_            **Install**: ``composer require symfony/plivo-notifier`` \
                     **DSN**: ``plivo://AUTH_ID:AUTH_TOKEN@default?from=FROM`` \
+                    **Webhook support**: No
+`Primotexto`_       **Install**: ``composer require symfony/primotexto-notifier`` \
+                    **DSN**: ``primotexto://API_KEY@default?from=FROM`` \
                     **Webhook support**: No
 `Redlink`_          **Install**: ``composer require symfony/redlink-notifier`` \
                     **DSN**: ``redlink://API_KEY:APP_KEY@default?from=SENDER_NAME&version=API_VERSION`` \
@@ -153,14 +168,26 @@ Service
 `Sinch`_            **Install**: ``composer require symfony/sinch-notifier`` \
                     **DSN**: ``sinch://ACCOUNT_ID:AUTH_TOKEN@default?from=FROM`` \
                     **Webhook support**: No
+`Sipgate`_          **Install**: ``composer require symfony/sipgate-notifier`` \
+                    **DSN**: ``sipgate://TOKEN_ID:TOKEN@default?senderId=SENDER_ID`` \
+                    **Webhook support**: No
+`SmsSluzba`_        **Install**: ``composer require symfony/sms-sluzba-notifier`` \
+                    **DSN**: ``sms-sluzba://USERNAME:PASSWORD@default`` \
+                    **Webhook support**: No
 `Smsapi`_           **Install**: ``composer require symfony/smsapi-notifier`` \
                     **DSN**: ``smsapi://TOKEN@default?from=FROM`` \
                     **Webhook support**: No
+`Smsbox`_           **Install**: ``composer require symfony/smsbox-notifier`` \
+                    **DSN**: ``smsbox://APIKEY@default?mode=MODE&strategy=STRATEGY&sender=SENDER`` \
+                    **Webhook support**: Yes
 `SmsBiuras`_        **Install**: ``composer require symfony/sms-biuras-notifier`` \
                     **DSN**: ``smsbiuras://UID:API_KEY@default?from=FROM&test_mode=0`` \
                     **Webhook support**: No
 `Smsc`_             **Install**: ``composer require symfony/smsc-notifier`` \
                     **DSN**: ``smsc://LOGIN:PASSWORD@default?from=FROM`` \
+                    **Webhook support**: No
+`SMSense`_          **Install**: ``composer require smsense-notifier`` \
+                    **DSN**: ``smsense://API_TOKEN@default?from=FROM`` \
                     **Webhook support**: No
 `SMSFactor`_        **Install**: ``composer require symfony/sms-factor-notifier`` \
                     **DSN**: ``sms-factor://TOKEN@default?sender=SENDER&push_type=PUSH_TYPE`` \
@@ -168,6 +195,9 @@ Service
 `SpotHit`_          **Install**: ``composer require symfony/spot-hit-notifier`` \
                     **DSN**: ``spothit://TOKEN@default?from=FROM`` \
                     **Webhook support**: No
+`Sweego`_           **Install**: ``composer require symfony/sweego-notifier`` \
+                    **DSN**: ``sweego://API_KEY@default?region=REGION&campaign_type=CAMPAIGN_TYPE`` \
+                    **Webhook support**: Yes
 `Telnyx`_           **Install**: ``composer require symfony/telnyx-notifier`` \
                     **DSN**: ``telnyx://API_KEY@default?from=FROM&messaging_profile_id=MESSAGING_PROFILE_ID`` \
                     **Webhook support**: No
@@ -177,6 +207,9 @@ Service
 `Twilio`_           **Install**: ``composer require symfony/twilio-notifier`` \
                     **DSN**: ``twilio://SID:TOKEN@default?from=FROM`` \
                     **Webhook support**: Yes
+`Unifonic`_         **Install**: ``composer require symfony/unifonic-notifier`` \
+                    **DSN**: ``unifonic://APP_SID@default?from=FROM`` \
+                    **Webhook support**: No
 `Vonage`_           **Install**: ``composer require symfony/vonage-notifier`` \
                     **DSN**: ``vonage://KEY:SECRET@default?from=FROM`` \
                     **Webhook support**: Yes
@@ -184,31 +217,6 @@ Service
                     **DSN**: ``yunpian://APIKEY@default`` \
                     **Webhook support**: No
 ==================  ====================================================================================================================================
-
-.. versionadded:: 6.1
-
-    The 46elks, OrangeSms, KazInfoTeh and Sendberry integrations were introduced in Symfony 6.1.
-    The ``no_stop_clause`` option in ``OvhCloud`` DSN was introduced in Symfony 6.1.
-    The ``test`` option in ``Smsapi`` DSN was introduced in Symfony 6.1.
-
-.. versionadded:: 6.2
-
-    The ContactEveryone and SMSFactor integrations were introduced in Symfony 6.2.
-
-.. versionadded:: 6.3
-
-    The Bandwith, iSendPro, Plivo, RingCentral, SimpleTextin and Termii integrations
-    were introduced in Symfony 6.3.
-    The ``from`` option in ``Smsapi`` DSN is optional since Symfony 6.3.
-
-.. versionadded:: 6.4
-
-    The `Redlink`_ and `Brevo`_ integrations were introduced in Symfony 6.4.
-
-.. deprecated:: 6.4
-
-    The `Sendinblue`_ integration is deprecated since
-    Symfony 6.4, use the `Brevo`_ integration instead.
 
 .. tip::
 
@@ -220,6 +228,26 @@ Service
     Some third party transports, when using the API, support status callbacks
     via webhooks. See the :doc:`Webhook documentation </webhook>` for more
     details.
+
+.. versionadded:: 7.1
+
+    The ``Smsbox``, ``SmsSluzba``, ``SMSense``, ``LOX24`` and ``Unifonic``
+    integrations were introduced in Symfony 7.1.
+
+.. versionadded:: 7.2
+
+    The ``Primotexto``, ``Sipgate`` and ``Sweego`` integrations were introduced in Symfony 7.2.
+
+.. versionadded:: 7.3
+
+    Webhook support for the ``Brevo`` integration was introduced in Symfony 7.3.
+    The extra properties in ``SentMessage`` for ``AllMySms`` and ``OvhCloud``
+    providers were introduced in Symfony 7.3 too.
+
+.. deprecated:: 7.1
+
+    The `Sms77`_ integration is deprecated since
+    Symfony 7.1, use the `Seven.io`_ integration instead.
 
 To enable a texter, add the correct DSN in your ``.env`` file and
 configure the ``texter_transports``:
@@ -310,14 +338,6 @@ send SMS messages::
         }
     }
 
-.. versionadded:: 6.2
-
-    The 3rd argument of ``SmsMessage`` (``$from``) was introduced in Symfony 6.2.
-
-.. versionadded:: 6.3
-
-    The 4th argument of ``SmsMessage`` (``$options``) was introduced in Symfony 6.3.
-
 The ``send()`` method returns a variable of type
 :class:`Symfony\\Component\\Notifier\\Message\\SentMessage` which provides
 information such as the message ID and the original message contents.
@@ -338,37 +358,70 @@ The chat channel is used to send chat messages to users by using
 :class:`Symfony\\Component\\Notifier\\Chatter` classes. Symfony provides
 integration with these chat services:
 
-=======================================  ====================================  =============================================================================
-Service                                  Package                               DSN
-=======================================  ====================================  =============================================================================
-`AmazonSns`_                             ``symfony/amazon-sns-notifier``       ``sns://ACCESS_KEY:SECRET_KEY@default?region=REGION``
-`Chatwork`_                              ``symfony/chatwork-notifier``         ``chatwork://API_TOKEN@default?room_id=ID``
-`Discord`_                               ``symfony/discord-notifier``          ``discord://TOKEN@default?webhook_id=ID``
-`FakeChat`_                              ``symfony/fake-chat-notifier``        ``fakechat+email://default?to=TO&from=FROM`` or ``fakechat+logger://default``
-`Firebase`_                              ``symfony/firebase-notifier``         ``firebase://USERNAME:PASSWORD@default``
-`Gitter`_                                ``symfony/gitter-notifier``           ``gitter://TOKEN@default?room_id=ROOM_ID``
-`GoogleChat`_                            ``symfony/google-chat-notifier``      ``googlechat://ACCESS_KEY:ACCESS_TOKEN@default/SPACE?thread_key=THREAD_KEY``
-`LINE Notify`_                           ``symfony/line-notify-notifier``      ``linenotify://TOKEN@default``
-`LinkedIn`_                              ``symfony/linked-in-notifier``        ``linkedin://TOKEN:USER_ID@default``
-`Mastodon`_                              ``symfony/mastodon-notifier``         ``mastodon://ACCESS_TOKEN@HOST``
-`Mattermost`_                            ``symfony/mattermost-notifier``       ``mattermost://ACCESS_TOKEN@HOST/PATH?channel=CHANNEL``
-`Mercure`_                               ``symfony/mercure-notifier``          ``mercure://HUB_ID?topic=TOPIC``
-`MicrosoftTeams`_                        ``symfony/microsoft-teams-notifier``  ``microsoftteams://default/PATH``
-`RocketChat`_                            ``symfony/rocket-chat-notifier``      ``rocketchat://TOKEN@ENDPOINT?channel=CHANNEL``
-`Slack`_                                 ``symfony/slack-notifier``            ``slack://TOKEN@default?channel=CHANNEL``
-`Telegram`_                              ``symfony/telegram-notifier``         ``telegram://TOKEN@default?channel=CHAT_ID``
-`Twitter`_                               ``symfony/twitter-notifier``          ``twitter://API_KEY:API_SECRET:ACCESS_TOKEN:ACCESS_SECRET@default``
-`Zendesk`_                               ``symfony/zendesk-notifier``          ``zendesk://EMAIL:TOKEN@SUBDOMAIN``
-`Zulip`_                                 ``symfony/zulip-notifier``            ``zulip://EMAIL:TOKEN@HOST?channel=CHANNEL``
-======================================   ====================================  =============================================================================
+======================================   =====================================================================================
+Service
+======================================   =====================================================================================
+`AmazonSns`_                             **Install**: ``composer require symfony/amazon-sns-notifier`` \
+                                         **DSN**: ``sns://ACCESS_KEY:SECRET_KEY@default?region=REGION``
+`Bluesky`_                               **Install**: ``composer require symfony/bluesky-notifier`` \
+                                         **DSN**: ``bluesky://USERNAME:PASSWORD@default``
+                                         **Extra properties in SentMessage**: ``cid``
+`Chatwork`_                              **Install**: ``composer require symfony/chatwork-notifier`` \
+                                         **DSN**: ``chatwork://API_TOKEN@default?room_id=ID``
+`Discord`_                               **Install**: ``composer require symfony/discord-notifier`` \
+                                         **DSN**: ``discord://TOKEN@default?webhook_id=ID``
+`FakeChat`_                              **Install**: ``composer require symfony/fake-chat-notifier`` \
+                                         **DSN**: ``fakechat+email://default?to=TO&from=FROM`` or ``fakechat+logger://default``
+`Firebase`_                              **Install**: ``composer require symfony/firebase-notifier`` \
+                                         **DSN**: ``firebase://USERNAME:PASSWORD@default``
+`GoogleChat`_                            **Install**: ``composer require symfony/google-chat-notifier`` \
+                                         **DSN**: ``googlechat://ACCESS_KEY:ACCESS_TOKEN@default/SPACE?thread_key=THREAD_KEY``
+`LINE Bot`_                              **Install**: ``composer require symfony/line-bot-notifier`` \
+                                         **DSN**: ``linebot://TOKEN@default?receiver=RECEIVER``
+`LINE Notify`_                           **Install**: ``composer require symfony/line-notify-notifier`` \
+                                         **DSN**: ``linenotify://TOKEN@default``
+`LinkedIn`_                              **Install**: ``composer require symfony/linked-in-notifier`` \
+                                         **DSN**: ``linkedin://TOKEN:USER_ID@default``
+`Mastodon`_                              **Install**: ``composer require symfony/mastodon-notifier`` \
+                                         **DSN**: ``mastodon://ACCESS_TOKEN@HOST``
+`Matrix`_                                **Install**: ``composer require symfony/matrix-notifier`` \
+                                         **DSN**: ``matrix://HOST:PORT/?accessToken=ACCESSTOKEN&ssl=SSL``
+`Mattermost`_                            **Install**: ``composer require symfony/mattermost-notifier`` \
+                                         **DSN**: ``mattermost://ACCESS_TOKEN@HOST/PATH?channel=CHANNEL``
+`Mercure`_                               **Install**: ``composer require symfony/mercure-notifier`` \
+                                         **DSN**: ``mercure://HUB_ID?topic=TOPIC``
+`MicrosoftTeams`_                        **Install**: ``composer require symfony/microsoft-teams-notifier`` \
+                                         **DSN**: ``microsoftteams://default/PATH``
+`RocketChat`_                            **Install**: ``composer require symfony/rocket-chat-notifier`` \
+                                         **DSN**: ``rocketchat://TOKEN@ENDPOINT?channel=CHANNEL``
+`Slack`_                                 **Install**: ``composer require symfony/slack-notifier`` \
+                                         **DSN**: ``slack://TOKEN@default?channel=CHANNEL``
+`Telegram`_                              **Install**: ``composer require symfony/telegram-notifier`` \
+                                         **DSN**: ``telegram://TOKEN@default?channel=CHAT_ID``
+`Twitter`_                               **Install**: ``composer require symfony/twitter-notifier`` \
+                                         **DSN**: ``twitter://API_KEY:API_SECRET:ACCESS_TOKEN:ACCESS_SECRET@default``
+`Zendesk`_                               **Install**: ``composer require symfony/zendesk-notifier`` \
+                                         **DSN**: ``zendesk://EMAIL:TOKEN@SUBDOMAIN``
+`Zulip`_                                 **Install**: ``composer require symfony/zulip-notifier`` \
+                                         **DSN**: ``zulip://EMAIL:TOKEN@HOST?channel=CHANNEL``
+======================================   =====================================================================================
 
-.. versionadded:: 6.2
+.. versionadded:: 7.1
 
-    The Zendesk and Chatwork integration were introduced in Symfony 6.2.
+    The ``Bluesky`` integration was introduced in Symfony 7.1.
 
-.. versionadded:: 6.3
+.. versionadded:: 7.2
 
-    The LINE Notify, Mastodon and Twitter integrations were introduced in Symfony 6.3.
+    The ``LINE Bot`` integration was introduced in Symfony 7.2.
+
+.. deprecated:: 7.2
+
+    The ``Gitter`` integration was removed in Symfony 7.2 because that service
+    no longer provides an API.
+
+.. versionadded:: 7.3
+
+    The ``Matrix`` integration was introduced in Symfony 7.3.
 
 .. warning::
 
@@ -551,32 +604,33 @@ The push channel is used to send notifications to users by using
 :class:`Symfony\\Component\\Notifier\\Texter` classes. Symfony provides
 integration with these push services:
 
-===============  ====================================  ==============================================================================
-Service          Package                               DSN
-===============  ====================================  ==============================================================================
-`Engagespot`_    ``symfony/engagespot-notifier``       ``engagespot://API_KEY@default?campaign_name=CAMPAIGN_NAME``
-`Expo`_          ``symfony/expo-notifier``             ``expo://Token@default``
-`Novu`_          ``symfony/novu-notifier``             ``novu://API_KEY@default``
-`Ntfy`_          ``symfony/ntfy-notifier``             ``ntfy://default/TOPIC``
-`OneSignal`_     ``symfony/one-signal-notifier``       ``onesignal://APP_ID:API_KEY@default?defaultRecipientId=DEFAULT_RECIPIENT_ID``
-`PagerDuty`_     ``symfony/pager-duty-notifier``       ``pagerduty://TOKEN@SUBDOMAIN``
-`Pushover`_      ``symfony/pushover-notifier``         ``pushover://USER_KEY:APP_TOKEN@default``
-===============  ====================================  ==============================================================================
-
-.. versionadded:: 6.1
-
-    The Engagespot integration was introduced in Symfony 6.1.
-
-.. versionadded:: 6.3
-
-    The PagerDuty and Pushover integrations were introduced in Symfony 6.3.
-
-.. versionadded:: 6.4
-
-    The Novu, Ntfy and GoIP integrations were introduced in Symfony 6.4.
+===============  =======================================================================================
+Service
+===============  =======================================================================================
+`Engagespot`_    **Install**: ``composer require symfony/engagespot-notifier`` \
+                 **DSN**: ``engagespot://API_KEY@default?campaign_name=CAMPAIGN_NAME``
+`Expo`_          **Install**: ``composer require symfony/expo-notifier`` \
+                 **DSN**: ``expo://TOKEN@default``
+`Novu`_          **Install**: ``composer require symfony/novu-notifier`` \
+                 **DSN**: ``novu://API_KEY@default``
+`Ntfy`_          **Install**: ``composer require symfony/ntfy-notifier`` \
+                 **DSN**: ``ntfy://default/TOPIC``
+`OneSignal`_     **Install**: ``composer require symfony/one-signal-notifier`` \
+                 **DSN**: ``onesignal://APP_ID:API_KEY@default?defaultRecipientId=DEFAULT_RECIPIENT_ID``
+`PagerDuty`_     **Install**: ``composer require symfony/pager-duty-notifier`` \
+                 **DSN**: ``pagerduty://TOKEN@SUBDOMAIN``
+`Pushover`_      **Install**: ``composer require symfony/pushover-notifier`` \
+                 **DSN**: ``pushover://USER_KEY:APP_TOKEN@default``
+`Pushy`_         **Install**: ``composer require symfony/pushy-notifier`` \
+                 **DSN**: ``pushy://API_KEY@default``
+===============  =======================================================================================
 
 To enable a texter, add the correct DSN in your ``.env`` file and
 configure the ``texter_transports``:
+
+.. versionadded:: 7.1
+
+    The `Pushy`_ integration was introduced in Symfony 7.1.
 
 .. code-block:: bash
 
@@ -624,6 +678,124 @@ configure the ``texter_transports``:
                 ->texterTransport('expo', env('EXPO_DSN'))
             ;
         };
+
+.. _notifier-desktop-channel:
+
+Desktop Channel
+~~~~~~~~~~~~~~~
+
+The desktop channel is used to display local desktop notifications on the same
+host machine using :class:`Symfony\\Component\\Notifier\\Texter` classes. Currently,
+Symfony is integrated with the following providers:
+
+===============  ================================================  ==============================================================================
+Provider         Install                                           DSN
+===============  ================================================  ==============================================================================
+`JoliNotif`_     ``composer require symfony/joli-notif-notifier``  ``jolinotif://default``
+===============  ================================================  ==============================================================================
+
+.. versionadded:: 7.2
+
+    The JoliNotif bridge was introduced in Symfony 7.2.
+
+If you are using :ref:`Symfony Flex <symfony-flex>`, installing that package will
+also create the necessary environment variable and configuration. Otherwise, you'll
+need to add the following manually:
+
+1) Add the correct DSN in your ``.env`` file:
+
+.. code-block:: bash
+
+    # .env
+    JOLINOTIF=jolinotif://default
+
+2) Update the Notifier configuration to add a new texter transport:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/notifier.yaml
+        framework:
+            notifier:
+                texter_transports:
+                    jolinotif: '%env(JOLINOTIF)%'
+
+    .. code-block:: xml
+
+        <!-- config/packages/notifier.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                https://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/symfony
+                https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+            <framework:config>
+                <framework:notifier>
+                    <framework:texter-transport name="jolinotif">
+                        %env(JOLINOTIF)%
+                    </framework:texter-transport>
+                </framework:notifier>
+            </framework:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/notifier.php
+        use Symfony\Config\FrameworkConfig;
+
+        return static function (FrameworkConfig $framework): void {
+            $framework->notifier()
+                ->texterTransport('jolinotif', env('JOLINOTIF'))
+            ;
+        };
+
+Now you can send notifications to your desktop as follows::
+
+    // src/Notifier/SomeService.php
+    use Symfony\Component\Notifier\Message\DesktopMessage;
+    use Symfony\Component\Notifier\TexterInterface;
+    // ...
+
+    class SomeService
+    {
+        public function __construct(
+            private TexterInterface $texter,
+        ) {
+        }
+
+        public function notifyNewSubscriber(User $user): void
+        {
+            $message = new DesktopMessage(
+                'New subscription! 🎉',
+                sprintf('%s is a new subscriber', $user->getFullName())
+            );
+
+            $this->texter->send($message);
+        }
+    }
+
+These notifications can be customized further, and depending on your operating system,
+they may support features like custom sounds, icons, and more::
+
+    use Symfony\Component\Notifier\Bridge\JoliNotif\JoliNotifOptions;
+    // ...
+
+    $options = (new JoliNotifOptions())
+        ->setIconPath('/path/to/icons/error.png')
+        ->setExtraOption('sound', 'sosumi')
+        ->setExtraOption('url', 'https://example.com');
+
+    $message = new DesktopMessage('Production is down', <<<CONTENT
+        ❌ Server prod-1 down
+        ❌ Server prod-2 down
+        ✅ Network is up
+        CONTENT, $options);
+
+    $texter->send($message);
 
 Configure to use Failover or Round-Robin Transports
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -928,17 +1100,14 @@ and its ``asChatMessage()`` method::
 
 The
 :class:`Symfony\\Component\\Notifier\\Notification\\SmsNotificationInterface`,
-:class:`Symfony\\Component\\Notifier\\Notification\\EmailNotificationInterface`
-and
+:class:`Symfony\\Component\\Notifier\\Notification\\EmailNotificationInterface`,
 :class:`Symfony\\Component\\Notifier\\Notification\\PushNotificationInterface`
+and
+:class:`Symfony\\Component\\Notifier\\Notification\\DesktopNotificationInterface`
 also exists to modify messages sent to those channels.
 
 Customize Browser Notifications (Flash Messages)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 6.1
-
-    Support for customizing importance levels was introduced in Symfony 6.1.
 
 The default behavior for browser channel notifications is to add a
 :ref:`flash message <flash-messages>` with ``notification`` as its key.
@@ -998,11 +1167,6 @@ You can benefit from this class by using it directly or extending the
 :class:`Symfony\\Bundle\\FrameworkBundle\\Test\\KernelTestCase`.
 
 See :ref:`testing documentation <notifier-assertions>` for the list of available assertions.
-
-.. versionadded:: 6.2
-
-    The :class:`Symfony\\Bundle\\FrameworkBundle\\Test\\NotificationAssertionsTrait`
-    was introduced in Symfony 6.2.
 
 Disabling Delivery
 ------------------
@@ -1106,6 +1270,7 @@ is dispatched. Listeners receive a
 .. _`AllMySms`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/AllMySms/README.md
 .. _`AmazonSns`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/AmazonSns/README.md
 .. _`Bandwidth`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Bandwidth/README.md
+.. _`Bluesky`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Bluesky/README.md
 .. _`Brevo`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Brevo/README.md
 .. _`Chatwork`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Chatwork/README.md
 .. _`Clickatell`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Clickatell/README.md
@@ -1119,18 +1284,21 @@ is dispatched. Listeners receive a
 .. _`Firebase`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Firebase/README.md
 .. _`FreeMobile`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/FreeMobile/README.md
 .. _`GatewayApi`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/GatewayApi/README.md
-.. _`Gitter`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Gitter/README.md
-.. _`GoIP`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/GoIp/README.md
+.. _`GoIP`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/GoIP/README.md
 .. _`GoogleChat`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/GoogleChat/README.md
 .. _`Infobip`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Infobip/README.md
 .. _`Iqsms`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Iqsms/README.md
 .. _`iSendPro`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Isendpro/README.md
+.. _`JoliNotif`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/JoliNotif/README.md
 .. _`KazInfoTeh`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/KazInfoTeh/README.md
+.. _`LINE Bot`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/LineBot/README.md
 .. _`LINE Notify`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/LineNotify/README.md
 .. _`LightSms`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/LightSms/README.md
 .. _`LinkedIn`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/LinkedIn/README.md
+.. _`LOX24`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Lox24/README.md
 .. _`Mailjet`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Mailjet/README.md
 .. _`Mastodon`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Mastodon/README.md
+.. _`Matrix`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Matrix/README.md
 .. _`Mattermost`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Mattermost/README.md
 .. _`Mercure`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Mercure/README.md
 .. _`MessageBird`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/MessageBird/README.md
@@ -1146,7 +1314,9 @@ is dispatched. Listeners receive a
 .. _`OvhCloud`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/OvhCloud/README.md
 .. _`PagerDuty`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/PagerDuty/README.md
 .. _`Plivo`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Plivo/README.md
+.. _`Primotexto`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Primotexto/README.md
 .. _`Pushover`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Pushover/README.md
+.. _`Pushy`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Pushy/README.md
 .. _`Redlink`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Redlink/README.md
 .. _`RFC 3986`: https://www.ietf.org/rfc/rfc3986.txt
 .. _`RingCentral`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/RingCentral/README.md
@@ -1154,19 +1324,26 @@ is dispatched. Listeners receive a
 .. _`SMSFactor`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/SmsFactor/README.md
 .. _`Sendberry`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Sendberry/README.md
 .. _`Sendinblue`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Sendinblue/README.md
+.. _`Seven.io`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Sevenio/README.md
 .. _`SimpleTextin`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/SimpleTextin/README.md
 .. _`Sinch`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Sinch/README.md
+.. _`Sipgate`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Sipgate/README.md
 .. _`Slack`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Slack/README.md
 .. _`Sms77`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Sms77/README.md
 .. _`SmsBiuras`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/SmsBiuras/README.md
+.. _`Smsbox`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Smsbox/README.md
 .. _`Smsapi`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Smsapi/README.md
 .. _`Smsc`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Smsc/README.md
+.. _`SMSense`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/SMSense/README.md
+.. _`SmsSluzba`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/SmsSluzba/README.md
 .. _`SpotHit`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/SpotHit/README.md
+.. _`Sweego`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Sweego/README.md
 .. _`Telegram`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Telegram/README.md
 .. _`Telnyx`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Telnyx/README.md
 .. _`TurboSms`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/TurboSms/README.md
 .. _`Twilio`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Twilio/README.md
 .. _`Twitter`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Twitter/README.md
+.. _`Unifonic`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Unifonic/README.md
 .. _`Vonage`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Vonage/README.md
 .. _`Yunpian`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Yunpian/README.md
 .. _`Zendesk`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Notifier/Bridge/Zendesk/README.md

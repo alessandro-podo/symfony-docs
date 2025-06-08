@@ -8,7 +8,8 @@ Redis Cache Adapter
     :ref:`Symfony Cache configuration <cache-configuration-with-frameworkbundle>`
     article if you are using it in a Symfony application.
 
-This adapter stores the values in-memory using one (or more) `Redis server`_ instances.
+This adapter stores the values in-memory using one (or more) `Redis server`_
+of `Valkey`_ server instances.
 
 Unlike the :doc:`APCu adapter </components/cache/adapters/apcu_adapter>`, and similarly to the
 :doc:`Memcached adapter </components/cache/adapters/memcached_adapter>`, it is not limited to the current server's
@@ -19,9 +20,9 @@ to utilize a cluster of servers to provide redundancy and/or fail-over is also a
 
     **Requirements:** At least one `Redis server`_ must be installed and running to use this
     adapter. Additionally, this adapter requires a compatible extension or library that implements
-    ``\Redis``, ``\RedisArray``, ``RedisCluster``, ``\Relay\Relay`` or ``\Predis``.
+    ``\Redis``, ``\RedisArray``, ``RedisCluster``, ``\Relay\Relay``, ``\Relay\Cluster`` or ``\Predis``.
 
-This adapter expects a `Redis`_, `RedisArray`_, `RedisCluster`_, `Relay`_ or `Predis`_ instance to be
+This adapter expects a `Redis`_, `RedisArray`_, `RedisCluster`_, `Relay`_, `RelayCluster`_ or `Predis`_ instance to be
 passed as the first parameter. A namespace and default cache lifetime can optionally be passed
 as the second and third parameters::
 
@@ -47,9 +48,9 @@ as the second and third parameters::
         ?MarshallerInterface $marshaller = null
     );
 
-.. versionadded:: 6.3
+.. versionadded:: 7.3
 
-    Support for `Relay`_ was introduced in Symfony 6.3.
+    Support for ``Relay\Cluster`` was introduced in Symfony 7.3.
 
 Configure the Connection
 ------------------------
@@ -64,6 +65,11 @@ helper method allows creating and configuring the Redis client class instance us
     $client = RedisAdapter::createConnection(
         'redis://localhost'
     );
+
+.. versionadded:: 7.3
+
+    Starting in Symfony 7.3, when using Valkey servers you can use the
+    ``valkey[s]:`` scheme instead of the ``redis[s]:`` one in your DSNs.
 
 The DSN can specify either an IP/host (and an optional port) or a socket path, as well as a
 password and a database index. To enable TLS for connections, the scheme ``redis`` must be
@@ -169,10 +175,6 @@ array of ``key => value`` pairs representing option names and their respective v
 Available Options
 ~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 6.3
-
-    ``\Relay\Relay`` support was introduced in Symfony 6.3.
-
 ``class`` (type: ``string``, default: ``null``)
     Specifies the connection library to return, either ``\Redis``, ``\Relay\Relay`` or ``\Predis\Client``.
     If none is specified, fallback value is in following order, depending which one is available first:
@@ -214,6 +216,9 @@ Available Options
 ``redis_sentinel`` (type: ``string``, default: ``null``)
     Specifies the master name connected to the sentinels.
 
+``sentinel_master`` (type: ``string``, default: ``null``)
+    Alias of ``redis_sentinel`` option.
+
 ``dbindex`` (type: ``int``, default: ``0``)
     Specifies the database index to select.
 
@@ -224,6 +229,34 @@ Available Options
 
 ``ssl`` (type: ``array``, default: ``null``)
     SSL context options. See `php.net/context.ssl`_ for more information.
+
+``relay_cluster_context`` (type: ``array``, default: ``[]``)
+    Defines configuration options specific to ``\Relay\Cluster``. For example, to
+    user a self-signed certificate for testing in local environment::
+
+        $options = [
+            // ...
+            'relay_cluster_context' => [
+                // ...
+                'stream' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                    'local_cert' => '/valkey.crt',
+                    'local_pk' => '/valkey.key',
+                    'cafile' => '/valkey.crt',
+                ],
+            ],
+        ];
+
+.. versionadded:: 7.1
+
+    The option ``sentinel_master`` as an alias for ``redis_sentinel`` was introduced
+    in Symfony 7.1.
+
+.. versionadded:: 7.3
+
+    The ``relay_cluster_context`` option was introduced in Symfony 7.3.
 
 .. note::
 
@@ -348,10 +381,12 @@ Supports key rotation, ensuring secure decryption with both old and new keys::
 
 .. _`Data Source Name (DSN)`: https://en.wikipedia.org/wiki/Data_source_name
 .. _`Redis server`: https://redis.io/
+.. _`Valkey`: https://valkey.io/
 .. _`Redis`: https://github.com/phpredis/phpredis
 .. _`RedisArray`: https://github.com/phpredis/phpredis/blob/develop/arrays.md
 .. _`RedisCluster`: https://github.com/phpredis/phpredis/blob/develop/cluster.md
 .. _`Relay`: https://relay.so/
+.. _`RelayCluster`: https://relay.so/docs/1.x/connections#cluster
 .. _`Predis`: https://packagist.org/packages/predis/predis
 .. _`Predis Connection Parameters`: https://github.com/nrk/predis/wiki/Connection-Parameters#list-of-connection-parameters
 .. _`TCP-keepalive`: https://redis.io/topics/clients#tcp-keepalive

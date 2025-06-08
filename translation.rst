@@ -416,6 +416,84 @@ You can also specify the message domain and pass some additional variables:
     major difference: automatic output escaping is **not** applied to translations
     using a tag.
 
+Global Translation Parameters
+-----------------------------
+
+.. versionadded:: 7.3
+
+    The global translation parameters feature was introduced in Symfony 7.3.
+
+If the content of a translation parameter is repeated across multiple
+translation messages (e.g. a company name, or a version number), you can define
+it as a global translation parameter. This helps you avoid repeating the same
+values manually in each message.
+
+You can configure these global parameters in the ``translations.globals`` option
+of your main configuration file using either ``%...%`` or ``{...}`` syntax:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/translator.yaml
+        translator:
+            # ...
+            globals:
+                # when using the '%' wrapping characters, you must escape them
+                '%%app_name%%': 'My application'
+                '{app_version}': '1.2.3'
+                '{url}': { message: 'url', parameters: { scheme: 'https://' }, domain: 'global' }
+
+    .. code-block:: xml
+
+           <!-- config/packages/translation.xml -->
+           <?xml version="1.0" encoding="UTF-8" ?>
+           <container xmlns="http://symfony.com/schema/dic/services"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xmlns:framework="http://symfony.com/schema/dic/symfony"
+               xsi:schemaLocation="http://symfony.com/schema/dic/services
+                   https://symfony.com/schema/dic/services/services-1.0.xsd
+                   http://symfony.com/schema/dic/symfony
+                   https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+               <framework:config>
+                   <framework:translator>
+                       <!-- ... -->
+                        <!-- when using the '%' wrapping characters, you must escape them -->
+                       <framework:global name="%%app_name%%">My application</framework:global>
+                       <framework:global name="{app_version}" value="1.2.3"/>
+                       <framework:global name="{url}" message="url" domain="global">
+                            <framework:parameter name="scheme">https://</framework:parameter>
+                        </framework:global>
+                   </framework:translator>
+               </framework:config>
+           </container>
+
+    .. code-block:: php
+
+        // config/packages/translator.php
+        use Symfony\Config\TwigConfig;
+
+        return static function (TwigConfig $translator): void {
+            // ...
+            // when using the '%' wrapping characters, you must escape them
+            $translator->globals('%%app_name%%')->value('My application');
+            $translator->globals('{app_version}')->value('1.2.3');
+            $translator->globals('{url}')->value(['message' => 'url', 'parameters' => ['scheme' => 'https://']]);
+        };
+
+Once defined, you can use these parameters in translation messages anywhere in
+your application:
+
+.. code-block:: twig
+
+    {{ 'Application version: {app_version}'|trans }}
+    {# output: "Application version: 1.2.3" #}
+
+    {# parameters passed to the message override global parameters #}
+    {{ 'Package version: {app_version}'|trans({'{app_version}': '2.3.4'}) }}
+    # Displays "Package version: 2.3.4"
+
 Forcing the Translator Locale
 -----------------------------
 
@@ -457,11 +535,6 @@ The ``translation:extract`` command looks for missing translations in:
 * Any PHP file/class stored in the ``src/`` directory that uses
   :ref:`Constraints Attributes <validation-constraints>`  with ``*message`` named argument(s).
 
-.. versionadded:: 6.2
-
-    The support of PHP files/classes that use constraint attributes was
-    introduced in Symfony 6.2.
-
 .. tip::
 
     Install the ``nikic/php-parser`` package in your project to improve the
@@ -472,10 +545,6 @@ The ``translation:extract`` command looks for missing translations in:
 
         $ composer require nikic/php-parser
 
-    .. versionadded:: 6.2
-
-        The AST parser support was introduced in Symfony 6.2.
-
 By default, when the ``translation:extract`` command creates new entries in the
 translation file, it uses the same content as both the source and the pending
 translation. The only difference is that the pending translation is prefixed by
@@ -484,6 +553,20 @@ translation. The only difference is that the pending translation is prefixed by
 .. code-block:: terminal
 
     $ php bin/console translation:extract --force --prefix="NEW_" fr
+
+Alternatively, you can use the ``--no-fill`` option to leave the pending translation
+completely empty when creating new entries in the translation catalog. This is
+particularly useful when using external translation tools, as it makes it easier
+to spot untranslated strings:
+
+.. code-block:: terminal
+
+    # when using the --no-fill option, the --prefix option is ignored
+    $ php bin/console translation:extract --force --no-fill fr
+
+.. versionadded:: 7.2
+
+    The ``--no-fill`` option was introduced in Symfony 7.2.
 
 .. _translation-resource-locations:
 
@@ -529,10 +612,6 @@ provides many loaders which are selected based on the following file extensions:
 * ``.mo``: `Machine object format`_;
 * ``.po``: `Portable object format`_;
 * ``.qt``: `QT Translations TS XML`_ file;
-
-.. versionadded:: 6.1
-
-    The ``.xliff`` file extension support was introduced in Symfony 6.1.
 
 The choice of which loader to use is entirely up to you and is a matter of
 taste. The recommended option is to use YAML for simple projects and use XLIFF
@@ -598,8 +677,7 @@ Translations of Doctrine Entities
 
 Unlike the contents of templates, it's not practical to translate the contents
 stored in Doctrine Entities using translation catalogs. Instead, use the
-Doctrine `Translatable Extension`_ or the `Translatable Behavior`_. For more
-information, read the documentation of those libraries.
+Doctrine `Translatable Extension`_.
 
 Custom Translation Resources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -637,10 +715,6 @@ Provider                Install with
 `Lokalise`_             ``composer require symfony/lokalise-translation-provider``
 `Phrase`_                ``composer require symfony/phrase-translation-provider``
 ======================  ===========================================================
-
-.. versionadded:: 6.4
-
-    The ``Phrase`` translation provider was introduced in Symfony 6.4.
 
 Each library includes a :ref:`Symfony Flex recipe <symfony-flex>` that will add
 a configuration example to your ``.env`` file. For example, suppose you want to
@@ -804,11 +878,6 @@ now use the following commands to push (upload) and pull (download) translations
     # the "--as-tree" option will write YAML messages as a tree-like structure instead
     # of flat keys
     $ php bin/console translation:pull loco --force --as-tree
-
-.. versionadded:: 6.4
-
-    The ``--as-tree`` option of the ``translation:pull`` command was introduced
-    in Symfony 6.4.
 
 Creating Custom Providers
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1022,8 +1091,14 @@ preferences. This is achieved with the ``getPreferredLanguage()`` method of the
 
 Symfony finds the best possible language based on the locales passed as argument
 and the value of the ``Accept-Language`` HTTP header. If it can't find a perfect
-match between them, this method returns the first locale passed as argument
-(that's why the order of the passed locales is important).
+match between them, Symfony will try to find a partial match based on the language
+(e.g. ``fr_CA`` would match ``fr_Latn_CH`` because their language is the same).
+If there's no perfect or partial match, this method returns the first locale passed
+as argument (that's why the order of the passed locales is important).
+
+.. versionadded:: 7.1
+
+    The feature to match locales partially was introduced in Symfony 7.1.
 
 .. _translation-fallback:
 
@@ -1101,10 +1176,6 @@ checks translation resources for several locales:
 Switch Locale Programmatically
 ------------------------------
 
-.. versionadded:: 6.1
-
-    The ``LocaleSwitcher`` was introduced in Symfony 6.1.
-
 Sometimes you need to change the application's locale dynamically while running
 some code. For example, a console command that renders email templates in
 different languages. In such cases, you only need to switch the locale temporarily.
@@ -1148,13 +1219,6 @@ The ``LocaleSwitcher`` class allows you to do that::
             // ...
         }
     }
-
-.. versionadded:: 6.4
-
-    The support of declaring an argument in the callback to inject the locale
-    being used in the
-    :method:`Symfony\\Component\\Translation\\LocaleSwitcher::runWithLocale`
-    method was introduced in Symfony 6.4.
 
 The ``LocaleSwitcher`` class changes the locale of:
 
@@ -1394,7 +1458,7 @@ Symfony processes all the application translation files as part of the process
 that compiles the application code before executing it. If there's an error in
 any translation file, you'll see an error message explaining the problem.
 
-If you prefer, you can also validate the contents of any YAML and XLIFF
+If you prefer, you can also validate the syntax of any YAML and XLIFF
 translation file using the ``lint:yaml`` and ``lint:xliff`` commands:
 
 .. code-block:: terminal
@@ -1434,6 +1498,22 @@ adapted to the format required by GitHub, but you can force that format too:
     .. code-block:: terminal
 
         $ php vendor/bin/yaml-lint translations/
+
+The ``lint:yaml`` and ``lint:xliff`` commands validate the YAML and XML syntax
+of the translation files, but not their contents. Use the following command
+to check that the translation contents are also correct:
+
+    .. code-block:: terminal
+
+        # checks the contents of all the translation catalogues in all locales
+        $ php bin/console lint:translations
+
+        # checks the contents of the translation catalogues for Italian (it) and Japanese (ja) locales
+        $ php bin/console lint:translations --locale=it --locale=ja
+
+.. versionadded:: 7.2
+
+    The ``lint:translations`` command was introduced in Symfony 7.2.
 
 Pseudo-localization translator
 ------------------------------
@@ -1596,7 +1676,6 @@ Learn more
 .. _`ISO 3166-1 alpha-2`: https://en.wikipedia.org/wiki/ISO_3166-1#Current_codes
 .. _`ISO 639-1`: https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
 .. _`Translatable Extension`: https://github.com/doctrine-extensions/DoctrineExtensions/blob/main/doc/translatable.md
-.. _`Translatable Behavior`: https://github.com/KnpLabs/DoctrineBehaviors
 .. _`Custom Language Name setting`: https://docs.lokalise.com/en/articles/1400492-uploading-files#custom-language-codes
 .. _`ICU resource bundle`: https://github.com/unicode-org/icu-docs/blob/main/design/bnf_rb.txt
 .. _`Portable object format`: https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html

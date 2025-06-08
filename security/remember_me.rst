@@ -19,7 +19,7 @@ the session lasts using a cookie with the ``remember_me`` firewall option:
                 main:
                     # ...
                     remember_me:
-                        secret:   '%kernel.secret%' # required
+                        secret: '%kernel.secret%'
                         lifetime: 604800 # 1 week in seconds
                         # by default, the feature is enabled by checking a
                         # checkbox in the login form (see below), uncomment the
@@ -44,7 +44,7 @@ the session lasts using a cookie with the ``remember_me`` firewall option:
                 <firewall name="main">
                     <!-- ... -->
 
-                    <!-- secret: required
+                    <!-- secret: default to "%kernel.secret%"
                          lifetime: 604800 is 1 week in seconds -->
                     <remember-me
                         secret="%kernel.secret%"
@@ -67,7 +67,7 @@ the session lasts using a cookie with the ``remember_me`` firewall option:
             $security->firewall('main')
                 // ...
                 ->rememberMe()
-                    ->secret('%kernel.secret%') // required
+                    ->secret('%kernel.secret%')
                     ->lifetime(604800) // 1 week in seconds
 
                     // by default, the feature is enabled by checking a
@@ -77,9 +77,11 @@ the session lasts using a cookie with the ``remember_me`` firewall option:
             ;
         };
 
-The ``secret`` option is the only required option and it is used to sign
-the remember me cookie. It's common to use the ``kernel.secret`` parameter,
-which is defined using the ``APP_SECRET`` environment variable.
+.. versionadded:: 7.2
+
+    The ``secret`` option is no longer required starting from Symfony 7.2. By
+    default, ``%kernel.secret%`` is used, which is defined using the
+    ``APP_SECRET`` environment variable.
 
 After enabling the ``remember_me`` system in the configuration, there are a
 couple more things to do before remember me works correctly:
@@ -152,10 +154,6 @@ you can add a ``_remember_me`` key to the body of your POST request.
     Optionally, you can configure a custom name for this key using the
     ``name`` setting under the ``remember_me`` section of your firewall.
 
-.. versionadded:: 6.3
-
-    The JSON login ``_remember_me`` option was introduced in Symfony 6.3.
-
 Always activating Remember Me
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -175,7 +173,6 @@ allow users to opt-out. In these cases, you can use the
                 main:
                     # ...
                     remember_me:
-                        secret: '%kernel.secret%'
                         # ...
                         always_remember_me: true
 
@@ -198,7 +195,6 @@ allow users to opt-out. In these cases, you can use the
                     <!-- ... -->
 
                     <remember-me
-                        secret="%kernel.secret%"
                         always-remember-me="true"
                     />
                 </firewall>
@@ -215,7 +211,6 @@ allow users to opt-out. In these cases, you can use the
             $security->firewall('main')
                 // ...
                 ->rememberMe()
-                    ->secret('%kernel.secret%')
                     // ...
                     ->alwaysRememberMe(true)
             ;
@@ -339,7 +334,6 @@ are fetched from the user object using the
                 main:
                     # ...
                     remember_me:
-                        secret: '%kernel.secret%'
                         # ...
                         signature_properties: ['password', 'updatedAt']
 
@@ -361,7 +355,7 @@ are fetched from the user object using the
                 <firewall name="main">
                     <!-- ... -->
 
-                    <remember-me secret="%kernel.secret%">
+                    <remember-me>
                         <signature-property>password</signature-property>
                         <signature-property>updatedAt</signature-property>
                     </remember-me>
@@ -379,7 +373,6 @@ are fetched from the user object using the
             $security->firewall('main')
                 // ...
                 ->rememberMe()
-                    ->secret('%kernel.secret%')
                     // ...
                     ->signatureProperties(['password', 'updatedAt'])
             ;
@@ -423,7 +416,6 @@ You can enable the doctrine token provider using the ``doctrine`` setting:
                 main:
                     # ...
                     remember_me:
-                        secret: '%kernel.secret%'
                         # ...
                         token_provider:
                             doctrine: true
@@ -446,7 +438,7 @@ You can enable the doctrine token provider using the ``doctrine`` setting:
                 <firewall name="main">
                     <!-- ... -->
 
-                    <remember-me secret="%kernel.secret%">
+                    <remember-me>
                         <token-provider doctrine="true"/>
                     </remember-me>
                 </firewall>
@@ -463,7 +455,6 @@ You can enable the doctrine token provider using the ``doctrine`` setting:
             $security->firewall('main')
                 // ...
                 ->rememberMe()
-                    ->secret('%kernel.secret%')
                     // ...
                     ->tokenProvider([
                         'doctrine' => true,

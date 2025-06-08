@@ -18,12 +18,13 @@ your favorite.
 :ref:`Symfony recommends attributes <best-practice-controller-attributes>`
 because it's convenient to put the route and controller in the same place.
 
+.. _routing-route-attributes:
+
 Creating Routes as Attributes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 PHP attributes allow to define routes next to the code of the
-:doc:`controllers </controller>` associated to those routes. Attributes are
-native in PHP 8 and higher versions, so you can use them right away.
+:doc:`controllers </controller>` associated to those routes.
 
 You need to add a bit of configuration to your project before using them. If your
 project uses :ref:`Symfony Flex <symfony-flex>`, this file is already created for you.
@@ -47,10 +48,6 @@ classes declared in the ``App\Controller`` namespace and stored in the
 ``src/Controller/`` directory which follows the PSR-4 standard. The kernel can
 act as a controller too, which is especially useful for small applications that
 use Symfony as a microframework.
-
-.. versionadded:: 6.2
-
-    The feature to import routes from a PSR-4 namespace root was introduced in Symfony 6.2.
 
 Suppose you want to define a route for the ``/blog`` URL in your application. To
 do so, create a :doc:`controller class </controller>` like the following:
@@ -376,10 +373,6 @@ can use any of these variables created by Symfony:
     An array of matched :ref:`route parameters <routing-route-parameters>` for
     the current route.
 
-.. versionadded:: 6.1
-
-    The ``params`` variable was introduced in Symfony 6.1.
-
 You can also use these functions:
 
 ``env(string $name)``
@@ -409,11 +402,6 @@ You can also use these functions:
         #[Route(condition: "service('route_checker').check(request)")]
         // Or without alias:
         #[Route(condition: "service('App\\\Service\\\RouteChecker').check(request)")]
-
-.. versionadded:: 6.1
-
-    The ``service(string $alias)`` function and ``#[AsRoutingConditionService]``
-    attribute were introduced in Symfony 6.1.
 
 Behind the scenes, expressions are compiled down to raw PHP. Because of this,
 using the ``condition`` key causes no extra overhead beyond the time it takes
@@ -447,6 +435,18 @@ evaluates them:
     blog_show         ANY      ANY      ANY    /blog/{slug}
     ----------------  -------  -------  -----  --------------------------------------------
 
+    # pass this option to also display all the defined route aliases
+    $ php bin/console debug:router --show-aliases
+
+    # pass this option to only display routes that match the given HTTP method
+    # (you can use the special value ANY to see routes that match any method)
+    $ php bin/console debug:router --method=GET
+    $ php bin/console debug:router --method=ANY
+
+.. versionadded:: 7.3
+
+    The ``--method`` option was introduced in Symfony 7.3.
+
 Pass the name (or part of the name) of some route to this argument to print the
 route details:
 
@@ -463,15 +463,6 @@ route details:
     | Options     | compiler_class: Symfony\Component\Routing\RouteCompiler |
     |             | utf8: true                                              |
     +-------------+---------------------------------------------------------+
-
-.. tip::
-
-    Use the ``--show-aliases`` option to show all available aliases for a given
-    route.
-
-.. versionadded:: 6.4
-
-    The ``--show-aliases`` option was introduced in Symfony 6.4.
 
 The other command is called ``router:match`` and it shows which route will match
 the given URL. It's useful to find out why some URL is not executing the
@@ -711,10 +702,6 @@ URL                       Route          Parameters
                 // ...
             };
 
-    .. versionadded:: 6.1
-
-        The ``Requirement`` enum was introduced in Symfony 6.1.
-
 .. tip::
 
     Route requirements (and route paths too) can include
@@ -727,12 +714,6 @@ URL                       Route          Parameters
     sequences that match generic character types. For example, ``\p{Lu}``
     matches any uppercase character in any language, ``\p{Greek}`` matches any
     Greek characters, etc.
-
-.. note::
-
-    When using regular expressions in route parameters, you can set the ``utf8``
-    route option to ``true`` to make any ``.`` character match any UTF-8
-    characters instead of just a single byte.
 
 If you prefer, requirements can be inlined in each parameter using the syntax
 ``{parameter_name<requirements>}``. This feature makes configuration more
@@ -1004,12 +985,6 @@ A common routing need is to convert the value stored in some parameter (e.g. an
 integer acting as the user ID) into another value (e.g. the object that
 represents the user). This feature is called a "param converter".
 
-.. versionadded:: 6.2
-
-    Starting from Symfony 6.2, route param conversion is a built-in feature.
-    In previous Symfony versions you had to install the package
-    ``sensio/framework-extra-bundle`` before using this feature.
-
 Now, keep the previous route configuration, but change the arguments of the
 controller action. Instead of ``string $slug``, add ``BlogPost $post``::
 
@@ -1025,7 +1000,7 @@ controller action. Instead of ``string $slug``, add ``BlogPost $post``::
     {
         // ...
 
-        #[Route('/blog/{slug}', name: 'blog_show')]
+        #[Route('/blog/{slug:post}', name: 'blog_show')]
         public function show(BlogPost $post): Response
         {
             // $post is the object whose slug matches the routing parameter
@@ -1039,16 +1014,40 @@ this case), the "param converter" makes a database request to find the object
 using the request parameters (``slug`` in this case). If no object is found,
 Symfony generates a 404 response automatically.
 
+The ``{slug:post}`` syntax maps the route parameter named ``slug`` to the controller
+argument named ``$post``. It also hints the "param converter" to look up the
+corresponding ``BlogPost`` object from the database using the slug.
+
+.. versionadded:: 7.1
+
+    Route parameter mapping was introduced in Symfony 7.1.
+
+When mapping multiple entities from route parameters, name collisions can occur.
+In this example, the route tries to define two mappings: one for an author and one
+for a category; both using the same ``name`` parameter. This isn't allowed because
+the route ends up declaring ``name`` twice::
+
+    #[Route('/search-book/{name:author}/{name:category}')]
+
+Such routes should instead be defined using the following syntax::
+
+    #[Route('/search-book/{authorName:author.name}/{categoryName:category.name}')]
+
+This way, the route parameter names are unique (``authorName`` and ``categoryName``),
+and the "param converter" can correctly map them to controller arguments (``$author``
+and ``$category``), loading them both by their name.
+
+.. versionadded:: 7.3
+
+    This more advanced style of route parameter mapping was introduced in Symfony 7.3.
+
+More advanced mappings can be achieved using the ``#[MapEntity]`` attribute.
 Check out the :ref:`Doctrine param conversion documentation <doctrine-entity-value-resolver>`
-to learn about the ``#[MapEntity]`` attribute that can be used to customize the
-database queries used to fetch the object from the route parameter.
+to learn how to customize the database queries used to fetch the object from the route
+parameter.
 
 Backed Enum Parameters
 ~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 6.3
-
-    The support of ``\BackedEnum`` as route parameters was introduced Symfony 6.3.
 
 You can use PHP `backed enumerations`_ as route parameters because Symfony will
 convert them automatically to their scalar values.
@@ -1343,6 +1342,23 @@ have been renamed. Let's say you have a route called ``product_show``:
 
 .. configuration-block::
 
+    .. code-block:: php-attributes
+
+        // src/Controller/ProductController.php
+        namespace App\Controller;
+
+        use Symfony\Component\HttpFoundation\Response;
+        use Symfony\Component\Routing\Attribute\Route;
+
+        class ProductController
+        {
+            #[Route('/product/{id}', name: 'product_show')]
+            public function show(): Response
+            {
+                // ...
+            }
+        }
+
     .. code-block:: yaml
 
         # config/routes.yaml
@@ -1378,6 +1394,25 @@ that acts exactly the same as ``product_show``.
 Instead of duplicating the original route, you can create an alias for it.
 
 .. configuration-block::
+
+    .. code-block:: php-attributes
+
+        // src/Controller/ProductController.php
+        namespace App\Controller;
+
+        use Symfony\Component\HttpFoundation\Response;
+        use Symfony\Component\Routing\Attribute\Route;
+
+        class ProductController
+        {
+            // the "alias" argument assigns an alternate name to this route;
+            // the alias will point to the actual route "product_show"
+            #[Route('/product/{id}', name: 'product_show', alias: ['product_details'])]
+            public function show(): Response
+            {
+                // ...
+            }
+        }
 
     .. code-block:: yaml
 
@@ -1416,8 +1451,21 @@ Instead of duplicating the original route, you can create an alias for it.
             $routes->alias('product_details', 'product_show');
         };
 
+.. versionadded:: 7.3
+
+    Support for route aliases in PHP attributes was introduced in Symfony 7.3.
+
 In this example, both ``product_show`` and ``product_details`` routes can
 be used in the application and will produce the same result.
+
+.. note::
+
+    YAML, XML, and PHP configuration formats are the only ways to define an alias
+    for a route that you do not own. You can't do this when using PHP attributes.
+
+    This allows you for example to use your own route name for URL generation,
+    while still targeting a route defined by a third-party bundle. The alias and
+    the original route do not need to be declared in the same file or format.
 
 .. _routing-alias-deprecation:
 
@@ -1438,6 +1486,42 @@ The ``product_show`` become the alias, and will now point to the ``product_detai
 This way, the ``product_show`` alias could be deprecated.
 
 .. configuration-block::
+
+    .. code-block:: php-attributes
+
+        // src/Controller/ProductController.php
+        namespace App\Controller;
+
+        use Symfony\Component\HttpFoundation\Response;
+        use Symfony\Component\Routing\Attribute\Route;
+
+        class ProductController
+        {
+            // this outputs the following generic deprecation message:
+            // Since acme/package 1.2: The "product_show" route alias is deprecated. You should stop using it, as it will be removed in the future.
+            #[Route('/product/{id}',
+                name: 'product_details',
+                alias: new DeprecatedAlias(
+                    aliasName: 'product_show',
+                    package: 'acme/package',
+                    version: '1.2',
+                ),
+            )]
+            // Or, you can also define a custom deprecation message (%alias_id% placeholder is available)
+            #[Route('/product/{id}',
+                name: 'product_details',
+                alias: new DeprecatedAlias(
+                    aliasName: 'product_show',
+                    package: 'acme/package',
+                    version: '1.2',
+                    message: 'The "%alias_id%" route alias is deprecated. Please use "product_details" instead.',
+                ),
+            )]
+            public function show(): Response
+            {
+                // ...
+            }
+        }
 
     .. code-block:: yaml
 
@@ -1748,13 +1832,6 @@ In services, you can get this information by
 In templates, use the :ref:`Twig global app variable <twig-app-variable>`
 to get the current route name (``app.current_route``) and its parameters
 (``app.current_route_parameters``).
-
-.. versionadded:: 6.2
-
-    The ``app.current_route`` and ``app.current_route_parameters`` variables
-    were introduced in Symfony 6.2.
-    Before you had to access ``_route`` and ``_route_params`` request
-    attributes using ``app.request.attributes.get()``.
 
 Special Routes
 --------------
@@ -2409,11 +2486,6 @@ that defines only one route. Consider the following class::
 
 Symfony will add a route alias named ``App\Controller\MainController::homepage``.
 
-.. versionadded:: 6.4
-
-    The automatic declaration of route aliases based on FQCNs was introduced in
-    Symfony 6.4.
-
 Generating URLs in Controllers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2802,7 +2874,6 @@ defined as attributes:
         controllers:
             resource: '../../src/Controller/'
             type: attribute
-            defaults:
             schemes: [https]
 
     .. code-block:: xml
@@ -2877,17 +2948,88 @@ service, which you can inject in your services or controllers::
         }
     }
 
-.. versionadded:: 6.4
+For security reasons, it's common to make signed URIs expire after some time
+(e.g. when using them to reset user credentials). By default, signed URIs don't
+expire, but you can define an expiration date/time using the ``$expiration``
+argument of :method:`Symfony\\Component\\HttpFoundation\\UriSigner::sign`::
 
-    The namespace of the ``UriSigner`` class changed in Symfony 6.4 from
-    ``Symfony\Component\HttpKernel\UriSigner`` to
-    ``Symfony\Component\HttpFoundation\UriSigner``.
+    // src/Service/SomeService.php
+    namespace App\Service;
+
+    use Symfony\Component\HttpFoundation\UriSigner;
+
+    class SomeService
+    {
+        public function __construct(
+            private UriSigner $uriSigner,
+        ) {
+        }
+
+        public function someMethod(): void
+        {
+            // ...
+
+            // generate a URL yourself or get it somehow...
+            $url = 'https://example.com/foo/bar?sort=desc';
+
+            // sign the URL with an explicit expiration date
+            $signedUrl = $this->uriSigner->sign($url, new \DateTimeImmutable('2050-01-01'));
+            // $signedUrl = 'https://example.com/foo/bar?sort=desc&_expiration=2524608000&_hash=e4a21b9'
+
+            // if you pass a \DateInterval, it will be added from now to get the expiration date
+            $signedUrl = $this->uriSigner->sign($url, new \DateInterval('PT10S'));  // valid for 10 seconds from now
+            // $signedUrl = 'https://example.com/foo/bar?sort=desc&_expiration=1712414278&_hash=e4a21b9'
+
+            // you can also use a timestamp in seconds
+            $signedUrl = $this->uriSigner->sign($url, 4070908800); // timestamp for the date 2099-01-01
+            // $signedUrl = 'https://example.com/foo/bar?sort=desc&_expiration=4070908800&_hash=e4a21b9'
+        }
+    }
 
 .. note::
 
-    The generated URI hashes may include the ``/`` and ``+`` characters, which
-    can cause issues with certain clients. If you encounter this problem, replace
-    them using the following: ``strtr($hash, ['/' => '_', '+' => '-'])``.
+    The expiration date/time is included in the signed URIs as a timestamp via
+    the ``_expiration`` query parameter.
+
+.. versionadded:: 7.1
+
+    The feature to add an expiration date for a signed URI was introduced in Symfony 7.1.
+
+If you need to know the reason why a signed URI is invalid, you can use the
+``verify()`` method which throws exceptions on failure::
+
+    use Symfony\Component\HttpFoundation\Exception\ExpiredSignedUriException;
+    use Symfony\Component\HttpFoundation\Exception\UnsignedUriException;
+    use Symfony\Component\HttpFoundation\Exception\UnverifiedSignedUriException;
+
+    // ...
+
+    try {
+        $uriSigner->verify($uri); // $uri can be a string or Request object
+
+        // the URI is valid
+    } catch (UnsignedUriException) {
+        // the URI isn't signed
+    } catch (UnverifiedSignedUriException) {
+        // the URI is signed but the signature is invalid
+    } catch (ExpiredSignedUriException) {
+        // the URI is signed but expired
+    }
+
+.. versionadded:: 7.3
+
+    The ``verify()`` method was introduced in Symfony 7.3.
+
+.. tip::
+
+    If ``symfony/clock`` is installed, it will be used to create and verify
+    expirations. This allows you to :ref:`mock the current time in your tests
+    <clock_writing-tests>`.
+
+.. versionadded:: 7.3
+
+    Support for :doc:`Symfony Clock </components/clock>` in ``UriSigner`` was
+    introduced in Symfony 7.3.
 
 Troubleshooting
 ---------------

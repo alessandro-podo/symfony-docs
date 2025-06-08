@@ -100,10 +100,10 @@ If your valid choice list is simple, you can pass them in directly via the
                     new Assert\Choice(['New York', 'Berlin', 'Tokyo'])
                 );
 
-                $metadata->addPropertyConstraint('genre', new Assert\Choice([
-                    'choices' => ['fiction', 'non-fiction'],
-                    'message' => 'Choose a valid genre.',
-                ]));
+                $metadata->addPropertyConstraint('genre', new Assert\Choice(
+                    choices: ['fiction', 'non-fiction'],
+                    message: 'Choose a valid genre.',
+                ));
             }
         }
 
@@ -182,9 +182,9 @@ constraint.
 
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
-                $metadata->addPropertyConstraint('genre', new Assert\Choice([
-                    'callback' => 'getGenres',
-                ]));
+                $metadata->addPropertyConstraint('genre', new Assert\Choice(
+                    callback: 'getGenres',
+                ));
             }
         }
 
@@ -250,9 +250,9 @@ you can pass the class name and the method as an array.
 
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
-                $metadata->addPropertyConstraint('genre', new Assert\Choice([
-                    'callback' => [Genre::class, 'getGenres'],
-                ]));
+                $metadata->addPropertyConstraint('genre', new Assert\Choice(
+                    callback: [Genre::class, 'getGenres'],
+                ));
             }
         }
 
@@ -271,7 +271,7 @@ to return the choices array. See
 ``choices``
 ~~~~~~~~~~~
 
-**type**: ``array`` [:ref:`default option <validation-default-option>`]
+**type**: ``array``
 
 A required option (unless `callback`_ is specified) - this is the array
 of options that should be considered in the valid set. The input value
@@ -314,10 +314,6 @@ match
 When this option is ``false``, the constraint checks that the given value is
 not one of the values defined in the ``choices`` option. In practice, it makes
 the ``Choice`` constraint behave like a ``NotChoice`` constraint.
-
-.. versionadded:: 6.2
-
-    The ``match`` option was introduced in Symfony 6.2.
 
 ``message``
 ~~~~~~~~~~~

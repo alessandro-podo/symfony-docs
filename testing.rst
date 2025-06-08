@@ -323,11 +323,6 @@ concrete one::
 No further configuration is required, as the test service container is a special one
 that allows you to interact with private services and aliases.
 
-.. versionadded:: 6.3
-
-    The possibility to set a private service with the test service container
-    without declaring a public alias for it was introduced in Symfony 6.3.
-
 .. _testing-databases:
 
 Configuring a Database for Tests
@@ -728,12 +723,6 @@ To set a specific firewall (``main`` is set by default)::
     By design, the ``loginUser()`` method doesn't work when using stateless firewalls.
     Instead, add the appropriate token/header in each ``request()`` call.
 
-.. versionadded:: 6.4
-
-    The ``tokenAttributes`` argument of the
-    :method:`Symfony\\Bundle\\FrameworkBundle\\KernelBrowser::loginUser` method
-    was introduced in Symfony 6.4.
-
 Making AJAX Requests
 ....................
 
@@ -974,11 +963,11 @@ However, Symfony provides useful shortcut methods for the most common cases:
 Response Assertions
 ...................
 
-``assertResponseIsSuccessful(string $message = '')``
+``assertResponseIsSuccessful(string $message = '', bool $verbose = true)``
     Asserts that the response was successful (HTTP status is 2xx).
-``assertResponseStatusCodeSame(int $expectedCode, string $message = '')``
+``assertResponseStatusCodeSame(int $expectedCode, string $message = '', bool $verbose = true)``
     Asserts a specific HTTP status code.
-``assertResponseRedirects(?string $expectedLocation = null, ?int $expectedCode = null, string $message = '')``
+``assertResponseRedirects(?string $expectedLocation = null, ?int $expectedCode = null, string $message = '', bool $verbose = true)``
     Asserts the response is a redirect response (optionally, you can check
     the target location and status code). The excepted location can be either
     an absolute or a relative path.
@@ -996,13 +985,12 @@ Response Assertions
     Asserts the response format returned by the
     :method:`Symfony\\Component\\HttpFoundation\\Response::getFormat` method
     is the same as the expected value.
-``assertResponseIsUnprocessable(string $message = '')``
+``assertResponseIsUnprocessable(string $message = '', bool $verbose = true)``
     Asserts the response is unprocessable (HTTP status is 422)
 
-.. versionadded:: 6.4
+.. versionadded:: 7.1
 
-    The support for relative path in ``assertResponseRedirects()`` was introduced
-    in Symfony 6.4.
+    The ``$verbose`` parameters were introduced in Symfony 7.1.
 
 Request Assertions
 ..................
@@ -1065,15 +1053,6 @@ Crawler Assertions
     Asserts that value of the field of the first form matching the given
     selector does (not) equal the expected value.
 
-.. versionadded:: 6.3
-
-    The ``assertSelectorCount()`` method was introduced in Symfony 6.3.
-
-.. versionadded:: 6.4
-
-    The ``assertAnySelectorTextContains()``, ``assertAnySelectorTextNotContains()``
-    and ``assertAnySelectorTextSame()`` were introduced in Symfony 6.4.
-
 .. _mailer-assertions:
 
 Mailer Assertions
@@ -1111,18 +1090,13 @@ Mailer Assertions
     Asserts that the subject of the given email does (not) contain the
     expected subject.
 
-.. versionadded:: 6.4
-
-    The ``assertEmailSubjectContains()`` and ``assertEmailSubjectNotContains()``
-    assertions were introduced in Symfony 6.4.
-
 Notifier Assertions
 ...................
 
-``assertNotificationCount(int $count, string $transportName = null, string $message = '')``
+``assertNotificationCount(int $count, ?string $transportName = null, string $message = '')``
     Asserts that the given number of notifications has been created
     (in total or for the given transport).
-``assertQueuedNotificationCount(int $count, string $transportName = null, string $message = '')``
+``assertQueuedNotificationCount(int $count, ?string $transportName = null, string $message = '')``
     Asserts that the given number of notifications are queued
     (in total or for the given transport).
 ``assertNotificationIsQueued(MessageEvent $event, string $message = '')``
@@ -1142,10 +1116,6 @@ Notifier Assertions
     Asserts that the name of the transport for the given notification
     is not the same as the given text.
 
-.. versionadded:: 6.2
-
-    The Notifier assertions were introduced in Symfony 6.2.
-
 HttpClient Assertions
 .....................
 
@@ -1154,7 +1124,7 @@ HttpClient Assertions
     For all the following assertions, ``$client->enableProfiler()`` must be
     called before the code that will trigger HTTP request(s).
 
-``assertHttpClientRequest(string $expectedUrl, string $expectedMethod = 'GET', string|array $expectedBody = null, array $expectedHeaders = [], string $httpClientId = 'http_client')``
+``assertHttpClientRequest(string $expectedUrl, string $expectedMethod = 'GET', string|array|null $expectedBody = null, array $expectedHeaders = [], string $httpClientId = 'http_client')``
     Asserts that the given URL has been called using, if specified,
     the given method body and headers. By default it will check on the HttpClient,
     but you can also pass a specific HttpClient ID.
@@ -1168,10 +1138,6 @@ HttpClient Assertions
     Asserts that the given number of requests has been made on the HttpClient.
     By default it will check on the HttpClient, but you can also pass a specific
     HttpClient ID.
-
-.. versionadded:: 6.4
-
-    The HttpClient assertions were introduced in Symfony 6.4.
 
 End to End Tests (E2E)
 ~~~~~~~~~~~~~~~~~~~~~~

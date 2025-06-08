@@ -1,10 +1,6 @@
 AssetMapper: Simple, Modern CSS & JS Management
 ===============================================
 
-.. versionadded:: 6.3
-
-    The AssetMapper component was introduced in Symfony 6.3.
-
 The AssetMapper component lets you write modern JavaScript and CSS without the complexity
 of using a bundler. Browsers *already* support many modern JavaScript features
 like the ``import`` statement and ES6 classes. And the HTTP/2 protocol means that
@@ -16,7 +12,7 @@ The component has two main features:
 * :ref:`Mapping & Versioning Assets <mapping-assets>`: All files inside of ``assets/``
   are made available publicly and **versioned**. You can reference the file
   ``assets/images/product.jpg`` in a Twig template with ``{{ asset('images/product.jpg') }}``.
-  The final URL will include a version hash, like ``/assets/images/product-3c16d9220694c0e56d8648f25e6035e9.jpg``.
+  The final URL will include a version hash, like ``/assets/images/product-3c16d92m.jpg``.
 
 * :ref:`Importmaps <importmaps-javascript>`: A native browser feature that makes it easier
   to use the JavaScript ``import`` statement (e.g. ``import { Modal } from 'bootstrap'``)
@@ -74,7 +70,7 @@ The path - ``images/duck.png`` - is relative to your mapped directory (``assets/
 This is known as the **logical path** to your asset.
 
 If you look at the HTML in your page, the URL will be something
-like: ``/assets/images/duck-3c16d9220694c0e56d8648f25e6035e9.png``. If you change
+like: ``/assets/images/duck-3c16d92m.png``. If you change
 the file, the version part of the URL will also change automatically.
 
 .. _asset-mapper-compile-assets:
@@ -82,7 +78,7 @@ the file, the version part of the URL will also change automatically.
 Serving Assets in dev vs prod
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the ``dev`` environment, the URL ``/assets/images/duck-3c16d9220694c0e56d8648f25e6035e9.png``
+In the ``dev`` environment, the URL ``/assets/images/duck-3c16d92m.png``
 is handled and returned by your Symfony app.
 
 For the ``prod`` environment, before deploy, you should run:
@@ -143,6 +139,28 @@ This will show you all the mapped paths and the assets inside of each:
 The "Logical Path" is the path to use when referencing the asset, like
 from a template.
 
+The ``debug:asset-map`` command provides several options to filter results:
+
+.. code-block:: terminal
+
+    # provide an asset name or dir to only show results that match it
+    $ php bin/console debug:asset-map bootstrap.js
+    $ php bin/console debug:asset-map style/
+
+    # provide an extension to only show that file type
+    $ php bin/console debug:asset-map --ext=css
+
+    # you can also only show assets in vendor/ dir or exclude any results from it
+    $ php bin/console debug:asset-map --vendor
+    $ php bin/console debug:asset-map --no-vendor
+
+    # you can also combine all filters (e.g. find bold web fonts in your own asset dirs)
+    $ php bin/console debug:asset-map bold --no-vendor --ext=woff2
+
+.. versionadded:: 7.2
+
+    The options to filter ``debug:asset-map`` results were introduced in Symfony 7.2.
+
 .. _importmaps-javascript:
 
 Importmaps & Writing JavaScript
@@ -196,6 +214,15 @@ to add any `npm package`_:
 .. code-block:: terminal
 
     $ php bin/console importmap:require bootstrap
+
+.. tip::
+
+    Add the ``--dry-run`` option to simulate package installation without actually
+    making any changes (e.g. ``php bin/console importmap:require bootstrap --dry-run``)
+
+    .. versionadded:: 7.3
+
+        The ``--dry-run`` option was introduced in Symfony 7.3.
 
 This adds the ``bootstrap`` package to your ``importmap.php`` file::
 
@@ -274,11 +301,6 @@ You can update your third-party packages to their current versions by running:
     $ php bin/console importmap:update bootstrap lodash
     $ php bin/console importmap:outdated bootstrap lodash
 
-.. versionadded:: 6.4
-
-    The ``importmap:install`` and ``importmap:outdated`` commands were introduced
-    in Symfony 6.4.
-
 How does the importmap Work?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -290,9 +312,9 @@ outputs an `importmap`_:
 
     <script type="importmap">{
         "imports": {
-            "app": "/assets/app-4e986c1a2318dd050b1d47db8d856278.js",
-            "/assets/duck.js": "/assets/duck-1b7a64b3b3d31219c262cf72521a5267.js",
-            "bootstrap": "/assets/vendor/bootstrap/bootstrap.index-f0935445d9c6022100863214b519a1f2.js"
+            "app": "/assets/app-4e986c1a.js",
+            "/assets/duck.js": "/assets/duck-1b7a64b3.js",
+            "bootstrap": "/assets/vendor/bootstrap/bootstrap.index-f093544d.js"
         }
     }</script>
 
@@ -349,8 +371,8 @@ The ``importmap()`` function also outputs a set of "preloads":
 
 .. code-block:: html
 
-    <link rel="modulepreload" href="/assets/app-4e986c1a2318dd050b1d47db8d856278.js">
-    <link rel="modulepreload" href="/assets/duck-1b7a64b3b3d31219c262cf72521a5267.js">
+    <link rel="modulepreload" href="/assets/app-4e986c1a.js">
+    <link rel="modulepreload" href="/assets/duck-1b7a64b3.js">
 
 This is a performance optimization and you can learn more about below
 in :ref:`Performance: Add Preloading <performance-preloading>`.
@@ -427,10 +449,6 @@ from inside ``app.js``:
 Handling CSS
 ------------
 
-.. versionadded:: 6.4
-
-    The ability to import CSS files was introduced in Symfony 6.4.
-
 CSS can be added to your page by importing it from a JavaScript file. The default
 ``assets/app.js`` already imports ``assets/styles/app.css``:
 
@@ -505,9 +523,9 @@ for ``duck.png``:
 
 .. code-block:: css
 
-    /* public/assets/styles/app-3c16d9220694c0e56d8648f25e6035e9.css */
+    /* public/assets/styles/app-3c16d92m.css */
     .quack {
-        background-image: url('../images/duck-3c16d9220694c0e56d8648f25e6035e9.png');
+        background-image: url('../images/duck-3c16d92m.png');
     }
 
 .. _asset-mapper-tailwind:
@@ -584,7 +602,7 @@ Sometimes a JavaScript file you're importing (e.g. ``import './duck.js'``),
 or a CSS/image file you're referencing won't be found, and you'll see a 404
 error in your browser's console. You'll also notice that the 404 URL is missing
 the version hash in the filename (e.g. a 404 to ``/assets/duck.js`` instead of
-a path like ``/assets/duck.1b7a64b3b3d31219c262cf72521a5267.js``).
+a path like ``/assets/duck-1b7a64b3.js``).
 
 This is usually because the path is wrong. If you're referencing the file
 directly in a Twig template:
@@ -667,7 +685,9 @@ which will automatically do most of these things for you:
 - **Compress your assets**: Your web server should compress (e.g. using gzip)
   your assets (JavaScript, CSS, images) before sending them to the browser. This
   is automatically enabled in Caddy and can be activated in Nginx and Apache.
-  In Cloudflare, assets are compressed by default.
+  In Cloudflare, assets are compressed by default. AssetMapper also supports
+  :ref:`precompressing your web assets <performance-precompressing>` to further
+  improve performance.
 
 - **Set long-lived cache expiry**: Your web server should set a long-lived
   ``Cache-Control`` HTTP header on your assets. Because the AssetMapper component includes a version
@@ -682,10 +702,6 @@ check the performance of your site.
 
 Performance: Understanding Preloading
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 6.4
-
-    Automatic preloading of JavaScript files was introduced in Symfony 6.4.
 
 One issue that Lighthouse may report is:
 
@@ -719,10 +735,84 @@ even though it hasn't yet seen the ``import`` statement for them.
 Additionally, if the :doc:`WebLink Component </web_link>` is available in your application,
 Symfony will add a ``Link`` header in the response to preload the CSS files.
 
-.. versionadded:: 6.4
+.. _performance-precompressing:
 
-    Automatic preloading of CSS files when WebLink is available was
-    introduced in Symfony 6.4.
+Pre-Compressing Assets
+----------------------
+
+.. versionadded:: 7.3
+
+    Support for pre-compressing assets was introduced in Symfony 7.3.
+
+Although most web servers (Caddy, Nginx, Apache, FrankenPHP) and services like Cloudflare
+provide asset compression features, AssetMapper also allows you to compress all
+your assets before serving them.
+
+This improves performance because you can compress assets using the highest (and
+slowest) compression ratios beforehand and provide those compressed assets to the
+server, which then returns them to the client without wasting CPU resources on
+compression.
+
+AssetMapper supports  `Brotli`_, `Zstandard`_ and  `gzip`_ compression formats.
+Before using any of them, the machine that pre-compresses assets must have
+installed the following PHP extensions or CLI commands:
+
+* Brotli: ``brotli`` CLI command; `brotli PHP extension`_;
+* Zstandard: ``zstd`` CLI command; `zstd PHP extension`_;
+* gzip: ``zopfli`` (better) or ``gzip`` CLI command; `zlib PHP extension`_.
+
+Then, update your AssetMapper configuration to define which compression to use
+and which file extensions should be compressed:
+
+.. code-block:: yaml
+
+    # config/packages/asset_mapper.yaml
+    framework:
+        asset_mapper:
+            # ...
+
+            precompress:
+                # possible values: 'brotli', 'zstandard', 'gzip'
+                format: 'zstandard'
+
+                # you can also pass multiple values to generate files in several formats
+                # format: ['brotli', 'zstandard']
+
+                # if you don't define the following option, AssetMapper will compress all
+                # the extensions considered safe (css, js, json, svg, xml, ttf, otf, wasm, etc.)
+                extensions: ['css', 'js', 'json', 'svg', 'xml']
+
+Now, when running the ``asset-map:compile`` command, all matching files will be
+compressed in the configured format and at the highest compression level. The
+compressed files are created with the same name as the original but with the
+``.br``, ``.zst``, or ``.gz`` extension appended.
+
+Then, you need to configure your web server to serve the precompressed assets
+instead of the original ones:
+
+.. configuration-block::
+
+    .. code-block:: caddy
+
+        file_server {
+            precompressed br zstd gzip
+        }
+
+    .. code-block:: nginx
+
+        gzip_static on;
+
+        # Requires https://github.com/google/ngx_brotli
+        brotli_static on;
+
+        # Requires https://github.com/tokers/zstd-nginx-module
+        zstd_static on;
+
+.. tip::
+
+    AssetMapper provides an ``assets:compress`` CLI command and a service called
+    ``asset_mapper.compressor`` that you can use anywhere in your application to
+    compress any kind of files (e.g. files uploaded by users to your application).
 
 Frequently Asked Questions
 --------------------------
@@ -868,7 +958,7 @@ be versioned! It will output something like:
 
 .. code-block:: html+twig
 
-    <link rel="stylesheet" href="/assets/bundles/babdevpagerfanta/css/pagerfanta-ea64fc9c55f8394e696554f8aeb81a8e.css">
+    <link rel="stylesheet" href="/assets/bundles/babdevpagerfanta/css/pagerfanta-ea64fc9c.css">
 
 Overriding 3rd-Party Assets
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -988,10 +1078,6 @@ is useful if you want to avoid leaking sensitive files like ``.env`` or
 
 This option is enabled by default.
 
-.. versionadded:: 6.4
-
-    The ``exclude_dotfiles`` option was introduced in Symfony 6.4.
-
 .. _config-importmap-polyfill:
 
 ``framework.asset_mapper.importmap_polyfill``
@@ -1020,12 +1106,6 @@ via a CDN (i.e. the default value for this setting is ``es-module-shims``):
     .. code-block:: terminal
 
         $ php bin/console importmap:require es-module-shims
-
-.. versionadded:: 6.4
-
-    Passing an importmap name in ``importmap_polyfill`` was
-    introduced in Symfony 6.4. Prior to this, you could pass ``false``
-    or a custom URL to load the polyfill.
 
 ``framework.asset_mapper.importmap_script_attributes``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1203,10 +1283,6 @@ command as part of your CI to be warned anytime a new vulnerability is found.
     The command takes a ``--format`` option to choose the output format between
     ``txt`` and ``json``.
 
-.. versionadded:: 6.4
-
-    The ``importmap:audit`` command was introduced in Symfony 6.4.
-
 .. _latest asset-mapper recipe: https://github.com/symfony/recipes/tree/main/symfony/asset-mapper
 .. _import statement: https://caniuse.com/es6-module-dynamic-import
 .. _ES6: https://caniuse.com/es6
@@ -1234,3 +1310,9 @@ command as part of your CI to be warned anytime a new vulnerability is found.
 .. _strict-dynamic: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src#strict-dynamic
 .. _kocal/biome-js-bundle: https://github.com/Kocal/BiomeJsBundle
 .. _`SensioLabs Minify Bundle`: https://github.com/sensiolabs/minify-bundle
+.. _`Brotli`: https://en.wikipedia.org/wiki/Brotli
+.. _`Zstandard`: https://en.wikipedia.org/wiki/Zstd
+.. _`gzip`: https://en.wikipedia.org/wiki/Gzip
+.. _`brotli PHP extension`: https://pecl.php.net/package/brotli
+.. _`zstd PHP extension`: https://pecl.php.net/package/zstd
+.. _`zlib PHP extension`: https://www.php.net/manual/en/book.zlib.php

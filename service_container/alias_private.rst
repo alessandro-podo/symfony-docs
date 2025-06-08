@@ -165,10 +165,6 @@ services.
             $services->alias('app.mailer', PhpMailer::class);
         };
 
-.. versionadded:: 6.3
-
-    The ``#[AsAlias]`` attribute was introduced in Symfony 6.3.
-
 This means that when using the container directly, you can access the
 ``PhpMailer`` service by asking for the ``app.mailer`` service like this::
 
@@ -184,6 +180,32 @@ This means that when using the container directly, you can access the
         services:
             # ...
             app.mailer: '@App\Mail\PhpMailer'
+
+The ``#[AsAlias]`` attribute can also be limited to one or more specific
+:ref:`config environments <configuration-environments>` using the ``when`` argument::
+
+    // src/Mail/PhpMailer.php
+    namespace App\Mail;
+
+    // ...
+    use Symfony\Component\DependencyInjection\Attribute\AsAlias;
+
+    #[AsAlias(id: 'app.mailer', when: 'dev')]
+    class PhpMailer
+    {
+        // ...
+    }
+
+    // pass an array to apply it in multiple config environments
+    #[AsAlias(id: 'app.mailer', when: ['dev', 'test'])]
+    class PhpMailer
+    {
+        // ...
+    }
+
+.. versionadded:: 7.3
+
+    The ``when`` argument of the ``#[AsAlias]`` attribute was introduced in Symfony 7.3.
 
 .. tip::
 

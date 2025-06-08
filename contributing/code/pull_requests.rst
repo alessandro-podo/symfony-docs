@@ -31,7 +31,7 @@ Before working on Symfony, setup a friendly environment with the following
 software:
 
 * Git;
-* PHP version 8.1 or above.
+* PHP version 8.2 or above.
 
 Configure Git
 ~~~~~~~~~~~~~
@@ -132,7 +132,7 @@ work:
   branch (you can find them on the `Symfony releases page`_). E.g. if you
   found a bug introduced in ``v5.1.10``, you need to work on ``5.4``.
 
-* ``7.1``, if you are adding a new feature.
+* ``7.2``, if you are adding a new feature.
 
   The only exception is when a new :doc:`major Symfony version </contributing/community/releases>`
   (5.0, 6.0, etc.) comes out every two years. Because of the

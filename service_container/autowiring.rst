@@ -640,10 +640,6 @@ logic about those arguments::
         }
     }
 
-.. versionadded:: 6.1
-
-    The ``#[Autowire]`` attribute was introduced in Symfony 6.1.
-
 The ``#[Autowire]`` attribute can also be used for :ref:`parameters <service-parameters>`,
 :doc:`complex expressions </service_container/expression_language>` and even
 :ref:`environment variables <config-env-vars>` ,
@@ -681,10 +677,6 @@ The ``#[Autowire]`` attribute can also be used for :ref:`parameters <service-par
         }
         // ...
     }
-
-.. versionadded:: 6.3
-
-    The ``param`` and ``env`` arguments were introduced in Symfony 6.3.
 
 .. _autowiring_closures:
 
@@ -741,11 +733,6 @@ attribute::
         }
     }
 
-.. versionadded:: 6.3
-
-    The :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireServiceClosure`
-    attribute was introduced in Symfony 6.3.
-
 It is common that a service accepts a closure with a specific signature.
 In this case, you can use the
 :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireCallable` attribute
@@ -782,10 +769,35 @@ attribute. By doing so, the callable will automatically be lazy, which means
 that the encapsulated service will be instantiated **only** at the
 closure's first call.
 
-.. versionadded:: 6.3
+The :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireMethodOf`
+attribute provides a simpler way of specifying the name of the service method
+by using the property name as method name::
 
-    The :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireCallable`
-    attribute was introduced in Symfony 6.3.
+    // src/Service/MessageGenerator.php
+    namespace App\Service;
+
+    use Symfony\Component\DependencyInjection\Attribute\AutowireMethodOf;
+
+    class MessageGenerator
+    {
+        public function __construct(
+            #[AutowireMethodOf('third_party.remote_message_formatter')]
+            private \Closure $format,
+        ) {
+        }
+
+        public function generate(string $message): void
+        {
+            $formattedMessage = ($this->format)($message);
+
+            // ...
+        }
+    }
+
+.. versionadded:: 7.1
+
+    The :class:`Symfony\Component\DependencyInjection\Attribute\\AutowireMethodOf`
+    attribute was introduced in Symfony 7.1.
 
 .. _autowiring-calls:
 
@@ -849,6 +861,40 @@ typed properties:
                 // ...
             }
         }
+
+Autowiring Anonymous Services Inline
+------------------------------------
+
+.. versionadded:: 7.1
+
+   The ``#[AutowireInline]`` attribute was added in Symfony 7.1.
+
+Similar to how anonymous services can be defined inline in configuration files,
+the :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireInline`
+attribute allows you to declare anonymous services inline, directly next to their
+corresponding arguments::
+
+    public function __construct(
+        #[AutowireInline(
+            factory: [ScopingHttpClient::class, 'forBaseUri'],
+            arguments: [
+                '$baseUri' => 'https://api.example.com',
+                '$defaultOptions' => [
+                    'auth_bearer' => '%env(EXAMPLE_TOKEN)%',
+                ],
+            ]
+        )]
+        private HttpClientInterface $client,
+    ) {
+    }
+
+This example tells Symfony to inject an object created by calling the
+``ScopingHttpClient::forBaseUri()`` factory with the specified base URI and
+default options. This is just one example: you can use the ``#[AutowireInline]``
+attribute to define any kind of anonymous service.
+
+While this approach is convenient for simple service definitions, consider moving
+complex or heavily configured services to a configuration file to ease maintenance.
 
 Autowiring Controller Action Methods
 ------------------------------------

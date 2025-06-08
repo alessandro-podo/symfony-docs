@@ -62,10 +62,11 @@ The database connection information is stored as an environment variable called
 
     If the username, password, host or database name contain any character considered
     special in a URI (such as ``: / ? # [ ] @ ! $ & ' ( ) * + , ; =``),
-    you must encode them. See `RFC 3986`_ for the full list of reserved characters or
-    use the :phpfunction:`urlencode` function to encode them. In this case you need to
-    remove the ``resolve:`` prefix in ``config/packages/doctrine.yaml`` to avoid errors:
-    ``url: '%env(DATABASE_URL)%'``
+    you must encode them. See `RFC 3986`_ for the full list of reserved characters.
+    You can use the :phpfunction:`urlencode` function to encode them or
+    the :ref:`urlencode environment variable processor <urlencode_environment_variable_processor>`.
+    In this case you need to remove the ``resolve:`` prefix in ``config/packages/doctrine.yaml``
+    to avoid errors: ``url: '%env(DATABASE_URL)%'``
 
 Now that your connection parameters are setup, Doctrine can create the ``db_name``
 database for you:
@@ -83,14 +84,14 @@ affect how Doctrine functions.
     There are many other Doctrine commands. Run ``php bin/console list doctrine``
     to see a full list.
 
+.. _doctrine-adding-mapping:
+
 Creating an Entity Class
 ------------------------
 
 Suppose you're building an application where products need to be displayed.
 Without even thinking about Doctrine or databases, you already know that
 you need a ``Product`` object to represent those products.
-
-.. _doctrine-adding-mapping:
 
 You can use the ``make:entity`` command to create this class and any fields you
 need. The command will ask you some questions - answer them like done below:
@@ -172,13 +173,6 @@ Whoa! You now have a new ``src/Entity/Product.php`` file::
 
     Confused why the price is an integer? Don't worry: this is just an example.
     But, storing prices as integers (e.g. 100 = $1 USD) can avoid rounding issues.
-
-.. note::
-
-    If you are using an SQLite database, you'll see the following error:
-    *PDOException: SQLSTATE[HY000]: General error: 1 Cannot add a NOT NULL
-    column with default value NULL*. Add a ``nullable=true`` option to the
-    ``description`` property to fix the problem.
 
 .. warning::
 
@@ -325,6 +319,13 @@ before, execute your migrations:
 .. code-block:: terminal
 
     $ php bin/console doctrine:migrations:migrate
+
+.. warning::
+
+    If you are using an SQLite database, you'll see the following error:
+    *PDOException: SQLSTATE[HY000]: General error: 1 Cannot add a NOT NULL
+    column with default value NULL*. Add a ``nullable=true`` option to the
+    ``description`` property to fix the problem.
 
 This will only execute the *one* new migration file, because DoctrineMigrationsBundle
 knows that the first migration was already executed earlier. Behind the scenes, it
@@ -619,10 +620,6 @@ the :ref:`doctrine-queries` section.
 Automatically Fetching Objects (EntityValueResolver)
 ----------------------------------------------------
 
-.. versionadded:: 6.2
-
-    Entity Value Resolver was introduced in Symfony 6.2.
-
 .. versionadded:: 2.7.1
 
     Autowiring of the ``EntityValueResolver`` was introduced in DoctrineBundle 2.7.1.
@@ -697,7 +694,7 @@ will automatically fetch them::
     /**
      * Perform a findOneBy() where the slug property matches {slug}.
      */
-    #[Route('/product/{slug}')]
+    #[Route('/product/{slug:product}')]
     public function showBySlug(Product $product): Response
     {
     }
@@ -711,14 +708,17 @@ Automatic fetching works in these situations:
   *all* of the wildcards in your route that are actually properties
   on your entity (non-properties are ignored).
 
-This behavior is enabled by default on all controllers. If you prefer, you can
-restrict this feature to only work on route wildcards called ``id`` to look for
-entities by primary key. To do so, set the option
-``doctrine.orm.controller_resolver.auto_mapping`` to ``false``.
+The ``{slug:product}`` syntax maps the route parameter named ``slug`` to the
+controller argument named ``$product``. It also hints the resolver to look up
+the corresponding ``Product`` object from the database using the slug.
 
-When ``auto_mapping`` is disabled, you can configure the mapping explicitly for
-any controller argument with the ``MapEntity`` attribute. You can even control
-the ``EntityValueResolver`` behavior by using the `MapEntity options`_ ::
+.. versionadded:: 7.1
+
+    Route parameter mapping was introduced in Symfony 7.1.
+
+You can also configure the mapping explicitly for any controller argument
+using the ``MapEntity`` attribute. You can even control the behavior of the
+``EntityValueResolver`` by using the `MapEntity options`_ ::
 
     // src/Controller/ProductController.php
     namespace App\Controller;
@@ -758,6 +758,20 @@ In the expression, the ``repository`` variable will be your entity's
 Repository class and any route wildcards - like ``{product_id}`` are
 available as variables.
 
+The repository method called in the expression can also return a list of entities.
+In that case, update the type of your controller argument::
+
+    #[Route('/posts_by/{author_id}')]
+    public function authorPosts(
+        #[MapEntity(class: Post::class, expr: 'repository.findBy({"author": author_id}, {}, 10)')]
+        iterable $posts
+    ): Response {
+    }
+
+.. versionadded:: 7.1
+
+    The mapping of the lists of entities was introduced in Symfony 7.1.
+
 This can also be used to help resolve multiple arguments::
 
     #[Route('/product/{id}/comments/{comment_id}')]
@@ -783,11 +797,32 @@ variable. Let's say you want the first or the last comment of a product dependin
         Comment $comment
     ): Response {
     }
+    
+.. _doctrine-entity-value-resolver-resolve-target-entities:
+    
+Fetch via Interfaces
+~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 6.4
+Suppose your ``Product`` class implements an interface called ``ProductInterface``.
+If you want to decouple your controllers from the concrete entity implementation,
+you can reference the entity by its interface instead.
 
-    The support for the ``request`` variable in expressions was introduced
-    in Symfony 6.4.
+To enable this, first configure the
+:doc:`resolve_target_entities option </doctrine/resolve_target_entity>`.
+Then, your controller can type-hint the interface, and the entity will be
+resolved automatically::
+
+    public function show(
+        #[MapEntity]
+        ProductInterface $product
+    ): Response {
+        // ...
+    }
+        
+.. versionadded:: 7.3
+
+    Support for target entity resolution in the ``EntityValueResolver`` was
+    introduced Symfony 7.3
 
 MapEntity Options
 ~~~~~~~~~~~~~~~~~
@@ -820,18 +855,6 @@ control behavior:
         ): Response {
         }
 
-``exclude``
-    Configures the properties that should be used in the ``findOneBy()``
-    method by *excluding* one or more properties so that not *all* are used::
-
-        #[Route('/product/{slug}/{date}')]
-        public function show(
-            #[MapEntity(exclude: ['date'])]
-            Product $product,
-            \DateTime $date
-        ): Response {
-        }
-
 ``stripNull``
     If true, then when ``findOneBy()`` is used, any values that are
     ``null`` will not be used for the query.
@@ -853,6 +876,21 @@ control behavior:
 
 ``disabled``
     If true, the ``EntityValueResolver`` will not try to replace the argument.
+
+``message``
+    An optional custom message displayed when there's a :class:`Symfony\\Component\\HttpKernel\\Exception\\NotFoundHttpException`,
+    but **only in the development environment** (you won't see this message in production)::
+
+        #[Route('/product/{product_id}')]
+        public function show(
+            #[MapEntity(id: 'product_id', message: 'The product does not exist')]
+            Product $product
+        ): Response {
+        }
+
+.. versionadded:: 7.1
+
+    The ``message`` option was introduced in Symfony 7.1.
 
 Updating an Object
 ------------------
@@ -1096,12 +1134,10 @@ Learn more
 
     doctrine/associations
     doctrine/events
-    doctrine/registration_form
     doctrine/custom_dql_functions
     doctrine/dbal
     doctrine/multiple_entity_managers
     doctrine/resolve_target_entity
-    doctrine/reverse_engineering
     testing/database
 
 .. _`Doctrine`: https://www.doctrine-project.org/

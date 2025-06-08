@@ -60,7 +60,7 @@ follows:
                     supports:
                         - App\Entity\BlogPost
                     initial_marking: draft
-                    places:
+                    places:          # defining places manually is optional
                         - draft
                         - reviewed
                         - rejected
@@ -97,10 +97,13 @@ follows:
                     </framework:marking-store>
                     <framework:support>App\Entity\BlogPost</framework:support>
                     <framework:initial-marking>draft</framework:initial-marking>
+
+                    <!-- defining places manually is optional -->
                     <framework:place>draft</framework:place>
                     <framework:place>reviewed</framework:place>
                     <framework:place>rejected</framework:place>
                     <framework:place>published</framework:place>
+
                     <framework:transition name="to_review">
                         <framework:from>draft</framework:from>
                         <framework:to>reviewed</framework:to>
@@ -135,6 +138,7 @@ follows:
                 ->type('method')
                 ->property('currentPlace');
 
+            // defining places manually is optional
             $blogPublishing->place()->name('draft');
             $blogPublishing->place()->name('reviewed');
             $blogPublishing->place()->name('rejected');
@@ -168,10 +172,16 @@ follows:
     ``'draft'`` or ``!php/const App\Entity\BlogPost::TRANSITION_TO_REVIEW``
     instead of ``'to_review'``.
 
-.. versionadded:: 6.4
+.. tip::
 
-    Since Symfony 6.4, the ``type`` option under ``marking_store`` can be
-    omitted when the ``property`` option is explicitly set.
+    You can omit the ``places`` option if your transitions define all the places
+    that are used in the workflow. Symfony will automatically extract the places
+    from the transitions.
+
+    .. versionadded:: 7.1
+
+        The support for omitting the ``places`` option was introduced in
+        Symfony 7.1.
 
 The configured property will be used via its implemented getter/setter methods by the marking store::
 
@@ -230,11 +240,6 @@ you must declare a setter to write your property::
             // assign the property and do something with the context
         }
     }
-
-.. versionadded:: 6.4
-
-    The feature to use public properties instead of getter/setter methods
-    and private properties was introduced in Symfony 6.4.
 
 .. note::
 
@@ -355,6 +360,15 @@ machine type, use ``camelCased workflow name + StateMachine``::
         }
     }
 
+To get the enabled transition of a Workflow, you can use
+:method:`Symfony\\Component\\Workflow\\WorkflowInterface::getEnabledTransition`
+method.
+
+.. versionadded:: 7.1
+
+    The :method:`Symfony\\Component\\Workflow\\WorkflowInterface::getEnabledTransition`
+    method was introduced in Symfony 7.1.
+
 Workflows can also be injected thanks to their name and the
 :class:`Symfony\\Component\\DependencyInjection\\Attribute\\Target`
 attribute::
@@ -377,16 +391,6 @@ attribute::
 This allows you to decorrelate the argument name of any implementation
 name.
 
-.. versionadded:: 6.2
-
-    All workflows and state machines services are tagged since in Symfony 6.2.
-
-.. versionadded:: 6.3
-
-    Injecting a workflow with only its name and
-    :class:`Symfony\\Component\\DependencyInjection\\Attribute\\Target` was
-    introduced in Symfony 6.3.
-
 .. tip::
 
     If you want to retrieve all workflows, for documentation purposes for example,
@@ -396,6 +400,15 @@ name.
     * ``workflow``: all workflows and all state machine;
     * ``workflow.workflow``: all workflows;
     * ``workflow.state_machine``: all state machines.
+
+    Note that workflow metadata are attached to tags under the ``metadata`` key,
+    giving you more context and information about the workflow at disposal.
+    Learn more about :ref:`tag attributes <tags_additional-attributes>` and
+    :ref:`storing workflow metadata <workflow_storing-metadata>`.
+
+    .. versionadded:: 7.1
+
+        The attached configuration to the tag was introduced in Symfony 7.1.
 
 .. tip::
 
@@ -498,21 +511,6 @@ order:
 
         $workflow->apply($subject, $transitionName, [Workflow::DISABLE_ANNOUNCE_EVENT => true]);
 
-The context is accessible in all events except for the ``workflow.guard`` events::
-
-    // $context must be an array
-    $context = ['context_key' => 'context_value'];
-    $workflow->apply($subject, $transitionName, $context);
-
-    // in an event listener (workflow.guard events)
-    $context = $event->getContext(); // returns ['context']
-
-.. deprecated:: 6.4
-
-    Gathering events context is deprecated since Symfony 6.4 and the
-    :method:`Symfony\\Component\\Workflow\\Event\\Event::getContext` method will be
-    removed in Symfony 7.0.
-
 .. note::
 
     The leaving and entering events are triggered even for transitions that stay
@@ -533,6 +531,7 @@ workflow leaves a place::
     use Psr\Log\LoggerInterface;
     use Symfony\Component\EventDispatcher\EventSubscriberInterface;
     use Symfony\Component\Workflow\Event\Event;
+    use Symfony\Component\Workflow\Event\LeaveEvent;
 
     class WorkflowLoggerSubscriber implements EventSubscriberInterface
     {
@@ -555,10 +554,23 @@ workflow leaves a place::
         public static function getSubscribedEvents(): array
         {
             return [
-                'workflow.blog_publishing.leave' => 'onLeave',
+                LeaveEvent::getName('blog_publishing') => 'onLeave',
+                // if you prefer, you can write the event name manually like this:
+                // 'workflow.blog_publishing.leave' => 'onLeave',
             ];
         }
     }
+
+.. tip::
+
+    All built-in workflow events define the ``getName(?string $workflowName, ?string $transitionOrPlaceName)``
+    method to build the full event name without having to deal with strings.
+    You can also use this method in your custom events via the
+    :class:`Symfony\\Component\\Workflow\\Event\\EventNameTrait`.
+
+    .. versionadded:: 7.1
+
+        The ``getName()`` method was introduced in Symfony 7.1.
 
 If some listeners update the context during a transition, you can retrieve
 it via the marking::
@@ -597,10 +609,6 @@ attributes::
 You may refer to the documentation about
 :ref:`defining event listeners with PHP attributes <event-dispatcher_event-listener-attributes>`
 for further use.
-
-.. versionadded:: 6.4
-
-    The workflow event attributes were introduced in Symfony 6.4.
 
 .. _workflow-usage-guard-events:
 
@@ -1088,6 +1096,8 @@ The following example shows these functions in action:
         <span class="error">{{ blocker.message }}</span>
     {% endfor %}
 
+.. _workflow_storing-metadata:
+
 Storing Metadata
 ----------------
 
@@ -1295,6 +1305,87 @@ In Twig templates, metadata is available via the ``workflow_metadata()`` functio
             </li>
         </ul>
     </p>
+
+Validating Workflow Definitions
+-------------------------------
+
+Symfony allows you to validate workflow definitions using your own custom logic.
+To do so, create a class that implements the
+:class:`Symfony\\Component\\Workflow\\Validator\\DefinitionValidatorInterface`::
+
+    namespace App\Workflow\Validator;
+
+    use Symfony\Component\Workflow\Definition;
+    use Symfony\Component\Workflow\Exception\InvalidDefinitionException;
+    use Symfony\Component\Workflow\Validator\DefinitionValidatorInterface;
+
+    final class BlogPublishingValidator implements DefinitionValidatorInterface
+    {
+        public function validate(Definition $definition, string $name): void
+        {
+            if (!$definition->getMetadataStore()->getMetadata('title')) {
+                throw new InvalidDefinitionException(sprintf('The workflow metadata title is missing in Workflow "%s".', $name));
+            }
+
+            // ...
+        }
+    }
+
+After implementing your validator, configure your workflow to use it:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/workflow.yaml
+        framework:
+            workflows:
+                blog_publishing:
+                    # ...
+
+                    definition_validators:
+                        - App\Workflow\Validator\BlogPublishingValidator
+
+    .. code-block:: xml
+
+        <!-- config/packages/workflow.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services https://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/symfony https://symfony.com/schema/dic/symfony/symfony-1.0.xsd"
+        >
+            <framework:config>
+                <framework:workflow name="blog_publishing">
+                    <!-- ... -->
+                    <framework:definition-validators>App\Workflow\Validator\BlogPublishingValidator</framework:definition-validators>
+                </framework:workflow>
+            </framework:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/workflow.php
+        use Symfony\Config\FrameworkConfig;
+
+        return static function (FrameworkConfig $framework): void {
+            $blogPublishing = $framework->workflows()->workflows('blog_publishing');
+            // ...
+
+            $blogPublishing->definitionValidators([
+                App\Workflow\Validator\BlogPublishingValidator::class
+            ]);
+
+            // ...
+        };
+
+The ``BlogPublishingValidator`` will be executed during container compilation
+to validate the workflow definition.
+
+.. versionadded:: 7.3
+
+    Support for workflow definition validators was introduced in Symfony 7.3.
 
 Learn more
 ----------

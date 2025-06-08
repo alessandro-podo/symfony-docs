@@ -62,6 +62,8 @@ this behavior by using the ``lock`` key like:
             lock: 'oci:host=127.0.0.1;dbname=app'
             lock: 'mongodb://127.0.0.1/app?collection=lock'
             lock: '%env(LOCK_DSN)%'
+            # using an existing service
+            lock: 'snc_redis.default'
 
             # named locks
             lock:
@@ -119,6 +121,9 @@ this behavior by using the ``lock`` key like:
 
                     <framework:resource>%env(LOCK_DSN)%</framework:resource>
 
+                    <!-- using an existing service -->
+                    <framework:resource>snc_redis.default</framework:resource>
+
                     <!-- named locks -->
                     <framework:resource name="invoice">semaphore</framework:resource>
                     <framework:resource name="invoice">redis://r2.docker</framework:resource>
@@ -131,6 +136,7 @@ this behavior by using the ``lock`` key like:
 
         // config/packages/lock.php
         use Symfony\Config\FrameworkConfig;
+        use function Symfony\Component\DependencyInjection\Loader\Configurator\env;
 
         return static function (FrameworkConfig $framework): void {
             $framework->lock()
@@ -152,6 +158,8 @@ this behavior by using the ``lock`` key like:
                 ->resource('default', ['oci:host=127.0.0.1;dbname=app'])
                 ->resource('default', ['mongodb://127.0.0.1/app?collection=lock'])
                 ->resource('default', [env('LOCK_DSN')])
+                // using an existing service
+                ->resource('default', ['snc_redis.default'])
 
                 // named locks
                 ->resource('invoice', ['semaphore', 'redis://r2.docker'])
@@ -159,10 +167,9 @@ this behavior by using the ``lock`` key like:
             ;
         };
 
-.. versionadded:: 6.1
+.. versionadded:: 7.2
 
-    The CSV support (e.g. ``zookeeper://localhost01,localhost02:2181``) in
-    ZookeeperStore DSN was introduced in Symfony 6.1.
+    The option to use an existing service as the lock/semaphore was introduced in Symfony 7.2.
 
 Locking a Resource
 ------------------

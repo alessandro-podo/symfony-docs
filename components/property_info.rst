@@ -183,6 +183,26 @@ for a property::
 
 See :ref:`components-property-info-type` for info about the ``Type`` class.
 
+Documentation Block
+~~~~~~~~~~~~~~~~~~~
+
+Extractors that implement :class:`Symfony\\Component\\PropertyInfo\\PropertyDocBlockExtractorInterface`
+can provide the full documentation block for a property as a string::
+
+    $docBlock = $propertyInfo->getDocBlock($class, $property);
+    /*
+        Example Result
+        --------------
+        string(79):
+            This is the subsequent paragraph in the DocComment.
+            It can span multiple lines.
+    */
+
+.. versionadded:: 7.1
+
+    The :class:`Symfony\\Component\\PropertyInfo\\PropertyDocBlockExtractorInterface`
+    interface was introduced in Symfony 7.1.
+
 .. _property-info-description:
 
 Description Information
@@ -228,12 +248,6 @@ to determine if it's accessible. This based on how the :doc:`PropertyAccess </co
 works. It assumes camel case style method names following `PSR-1`_. For example,
 both ``myProperty`` and ``my_property`` properties are readable if there's a
 ``getMyProperty()`` method and writable if there's a ``setMyProperty()`` method.
-
-.. versionadded:: 6.4
-
-    In Symfony versions prior to 6.4, snake case properties (e.g. ``my_property``)
-    were not writable by camel case methods (e.g. ``setMyProperty()``). You had
-    to define method names with underscores (e.g. ``setMy_property()``).
 
 .. _property-info-initializable:
 
@@ -419,6 +433,12 @@ library is present::
     // Description information.
     $phpDocExtractor->getShortDescription($class, $property);
     $phpDocExtractor->getLongDescription($class, $property);
+    $phpDocExtractor->getDocBlock($class, $property);
+
+.. versionadded:: 7.1
+
+    The :method:`Symfony\\Component\\PropertyInfo\\Extractor\\PhpDocExtractor::getDocBlock`
+    method was introduced in Symfony 7.1.
 
 PhpStanExtractor
 ~~~~~~~~~~~~~~~~
@@ -449,7 +469,18 @@ information from annotations of properties and methods, such as ``@var``,
     use App\Domain\Foo;
 
     $phpStanExtractor = new PhpStanExtractor();
+
+    // Type information.
     $phpStanExtractor->getTypesFromConstructor(Foo::class, 'bar');
+    // Description information.
+    $phpStanExtractor->getShortDescription($class, 'bar');
+    $phpStanExtractor->getLongDescription($class, 'bar');
+
+.. versionadded:: 7.3
+
+    The :method:`Symfony\\Component\\PropertyInfo\\Extractor\\PhpStanExtractor::getShortDescription`
+    and :method:`Symfony\\Component\\PropertyInfo\\Extractor\\PhpStanExtractor::getLongDescription`
+    methods were introduced in Symfony 7.3.
 
 SerializerExtractor
 ~~~~~~~~~~~~~~~~~~~
@@ -473,20 +504,6 @@ with the ``property_info`` service in the Symfony Framework::
 
     // the `serializer_groups` option must be configured (may be set to null)
     $serializerExtractor->getProperties($class, ['serializer_groups' => ['mygroup']]);
-
-.. versionadded:: 6.4
-
-    The
-    :class:`Symfony\\Component\\Serializer\\Mapping\\Loader\\AttributeLoader`
-    was introduced in Symfony 6.4. Prior to this, the
-    :class:`Symfony\\Component\\Serializer\\Mapping\\Loader\\AnnotationLoader`
-    must be used.
-
-.. deprecated:: 6.4
-
-    The
-    :class:`Symfony\\Component\\Serializer\\Mapping\\Loader\\AnnotationLoader`
-    was deprecated in Symfony 6.4.
 
 If ``serializer_groups`` is set to ``null``, serializer groups metadata won't be
 checked but you will get only the properties considered by the Serializer
@@ -521,6 +538,8 @@ with the ``property_info`` service in the Symfony Framework::
     // Type information.
     $doctrineExtractor->getTypes($class, $property);
 
+.. _components-property-information-constructor-extractor:
+
 ConstructorExtractor
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -553,6 +572,7 @@ Creating Your Own Extractors
 
 You can create your own property information extractors by creating a
 class that implements one or more of the following interfaces:
+:class:`Symfony\\Component\\PropertyInfo\\Extractor\\ConstructorArgumentTypeExtractorInterface`,
 :class:`Symfony\\Component\\PropertyInfo\\PropertyAccessExtractorInterface`,
 :class:`Symfony\\Component\\PropertyInfo\\PropertyDescriptionExtractorInterface`,
 :class:`Symfony\\Component\\PropertyInfo\\PropertyListExtractorInterface`,
@@ -570,6 +590,11 @@ service by defining it as a service with one or more of the following
 * ``property_info.access_extractor`` if it provides access information.
 * ``property_info.initializable_extractor`` if it provides initializable information
   (it checks if a property can be initialized through the constructor).
+* ``property_info.constructor_extractor`` if it provides type information from the constructor argument.
+
+  .. versionadded:: 7.3
+
+      The ``property_info.constructor_extractor`` tag was introduced in Symfony 7.3.
 
 .. _`PSR-1`: https://www.php-fig.org/psr/psr-1/
 .. _`phpDocumentor Reflection`: https://github.com/phpDocumentor/ReflectionDocBlock

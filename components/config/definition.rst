@@ -83,8 +83,18 @@ reflect the real structure of the configuration values::
             ->scalarNode('default_connection')
                 ->defaultValue('mysql')
             ->end()
+            ->stringNode('username')
+                ->defaultValue('root')
+            ->end()
+            ->stringNode('password')
+                ->defaultValue('root')
+            ->end()
         ->end()
     ;
+
+.. versionadded:: 7.2
+
+    The ``stringNode()`` method was introduced in Symfony 7.2.
 
 The root node itself is an array node, and has children, like the boolean
 node ``auto_connect`` and the scalar node ``default_connection``. In general:
@@ -100,6 +110,7 @@ node definition. Node types are available for:
 * scalar (generic type that includes booleans, strings, integers, floats
   and ``null``)
 * boolean
+* string
 * integer
 * float
 * enum (similar to scalar, but it only allows a finite set of values)
@@ -108,6 +119,10 @@ node definition. Node types are available for:
 
 and are created with ``node($name, $type)`` or their associated shortcut
 ``xxxxNode($name)`` method.
+
+.. versionadded:: 7.2
+
+    Support for the ``string`` type was introduced in Symfony 7.2.
 
 Numeric Node Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -171,10 +186,24 @@ The configuration can now be written like this::
         ->end()
     ;
 
-.. versionadded:: 6.3
+You can also use the ``enumClass()`` method to pass the FQCN of an enum
+class to the node. This will automatically set the values of the node to
+the cases of the enum::
 
-    The support of enum values in ``enumNode()`` was introduced
-    in Symfony 6.3.
+    $rootNode
+        ->children()
+            ->enumNode('delivery')
+                ->enumClass(Delivery::class)
+            ->end()
+        ->end()
+    ;
+
+When using a backed enum, the values provided to the node will be cast
+to one of the enum cases if possible.
+
+.. versionadded:: 7.3
+
+    The ``enumClass()`` method was introduced in Symfony 7.3.
 
 Array Nodes
 ~~~~~~~~~~~
@@ -517,6 +546,30 @@ and in XML:
     <!-- entries-per-page: This value is only used for the search results page. -->
     <config entries-per-page="25"/>
 
+You can also provide a URL to a full documentation page::
+
+    $rootNode
+        ->docUrl('Full documentation is available at https://example.com/docs/{version:major}.{version:minor}/reference.html')
+        ->children()
+            ->integerNode('entries_per_page')
+                ->defaultValue(25)
+            ->end()
+        ->end()
+    ;
+
+A few placeholders are available to customize the URL:
+
+* ``{version:major}``: The major version of the package currently installed
+* ``{version:minor}``: The minor version of the package currently installed
+* ``{package}``: The name of the package
+
+The placeholders will be replaced when printing the configuration tree with the
+``config:dump-reference`` command.
+
+.. versionadded:: 7.3
+
+    The ``docUrl()`` method was introduced in Symfony 7.3.
+
 Optional Sections
 -----------------
 
@@ -805,6 +858,7 @@ A validation rule always has an "if" part. You can specify this part in
 the following ways:
 
 - ``ifTrue()``
+- ``ifFalse()``
 - ``ifString()``
 - ``ifNull()``
 - ``ifEmpty()``
@@ -822,6 +876,10 @@ A validation rule also requires a "then" part:
 
 Usually, "then" is a closure. Its return value will be used as a new value
 for the node, instead of the node's original value.
+
+.. versionadded:: 7.3
+
+    The ``ifFalse()`` method was introduced in Symfony 7.3.
 
 Configuring the Node Path Separator
 -----------------------------------

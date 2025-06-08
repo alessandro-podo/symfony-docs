@@ -1,10 +1,6 @@
 The Clock Component
 ===================
 
-.. versionadded:: 6.2
-
-    The Clock component was introduced in Symfony 6.2
-
 The Clock component decouples applications from the system clock. This allows
 you to fix time to improve testability of time-sensitive logic.
 
@@ -78,16 +74,6 @@ Later on this page you can learn how to use this clock in your services and test
 When using the Clock component, you manipulate
 :class:`Symfony\\Component\\Clock\\DatePoint` instances. You can learn more
 about it in :ref:`the dedicated section <clock_date-point>`.
-
-.. versionadded:: 6.3
-
-    The :class:`Symfony\\Component\\Clock\\Clock` class and ``now()`` function
-    were introduced in Symfony 6.3.
-
-.. versionadded:: 6.4
-
-    The ``modifier`` argument of the ``now()`` function was introduced in
-    Symfony 6.4.
 
 Available Clocks Implementations
 --------------------------------
@@ -208,10 +194,6 @@ you can set the current time arbitrarily without having to change your service c
 This will help you test every case of your method without the need of actually
 being in a month or another.
 
-.. versionadded:: 6.3
-
-    The :class:`Symfony\\Component\\Clock\\ClockAwareTrait` was introduced in Symfony 6.3.
-
 .. _clock_date-point:
 
 The ``DatePoint`` Class
@@ -247,16 +229,73 @@ The constructor also allows setting a timezone or custom referenced date::
     $referenceDate = new \DateTimeImmutable();
     $relativeDate = new DatePoint('+1month', reference: $referenceDate);
 
+The ``DatePoint`` class also provides a named constructor to create dates from
+timestamps::
+
+    $dateOfFirstCommitToSymfonyProject = DatePoint::createFromTimestamp(1129645656);
+    // equivalent to:
+    // $dateOfFirstCommitToSymfonyProject = (new \DateTimeImmutable())->setTimestamp(1129645656);
+
+    // negative timestamps (for dates before January 1, 1970) and float timestamps
+    // (for high precision sub-second datetimes) are also supported
+    $dateOfFirstMoonLanding = DatePoint::createFromTimestamp(-14182940);
+
+.. versionadded:: 7.1
+
+    The ``createFromTimestamp()`` method was introduced in Symfony 7.1.
+
 .. note::
 
     In addition ``DatePoint`` offers stricter return types and provides consistent
     error handling across versions of PHP, thanks to polyfilling `PHP 8.3's behavior`_
     on the topic.
 
-.. versionadded:: 6.4
+``DatePoint`` also allows to set and get the microsecond part of the date and time::
 
-    The :class:`Symfony\\Component\\Clock\\DatePoint` class was introduced
-    in Symfony 6.4.
+    $datePoint = new DatePoint();
+    $datePoint->setMicrosecond(345);
+    $microseconds = $datePoint->getMicrosecond();
+
+.. note::
+
+    This feature polyfills PHP 8.4's behavior on the topic, as microseconds manipulation
+    is not available in previous versions of PHP.
+
+.. versionadded:: 7.1
+
+    The :method:`Symfony\\Component\\Clock\\DatePoint::setMicrosecond` and
+    :method:`Symfony\\Component\\Clock\\DatePoint::getMicrosecond` methods were
+    introduced in Symfony 7.1.
+
+Storing DatePoints in the Database
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you :doc:`use Doctrine </doctrine>` to work with databases, consider using the
+``date_point`` Doctrine type, which converts to/from ``DatePoint`` objects automatically::
+
+    // src/Entity/Product.php
+    namespace App\Entity;
+
+    use Doctrine\ORM\Mapping as ORM;
+    use Symfony\Component\Clock\DatePoint;
+
+    #[ORM\Entity]
+    class Product
+    {
+        // if you don't define the Doctrine type explicitly, Symfony will autodetect it:
+        #[ORM\Column]
+        private DatePoint $createdAt;
+
+        // if you prefer to define the Doctrine type explicitly:
+        #[ORM\Column(type: 'date_point')]
+        private DatePoint $updatedAt;
+
+        // ...
+    }
+
+.. versionadded:: 7.3
+
+    The ``DatePointType`` was introduced in Symfony 7.3.
 
 .. _clock_writing-tests:
 
@@ -314,10 +353,6 @@ By combining the :class:`Symfony\\Component\\Clock\\ClockAwareTrait` and
 :class:`Symfony\\Component\\Clock\\Test\\ClockSensitiveTrait`, you have full
 control on your time-sensitive code's behavior.
 
-.. versionadded:: 6.3
-
-    The :class:`Symfony\\Component\\Clock\\Test\\ClockSensitiveTrait` was introduced in Symfony 6.3.
-
 Exceptions Management
 ---------------------
 
@@ -337,11 +372,6 @@ pass an invalid timezone, you'll get a ``DateInvalidTimeZoneException``::
 These exceptions are available starting from PHP 8.3. However, thanks to the
 `symfony/polyfill-php83`_ dependency required by the Clock component, you can
 use them even if your project doesn't use PHP 8.3 yet.
-
-.. versionadded:: 6.4
-
-    The support for ``DateMalformedStringException`` and
-    ``DateInvalidTimeZoneException`` was introduced in Symfony 6.4.
 
 .. _`PSR-20`: https://www.php-fig.org/psr/psr-20/
 .. _`accepted by the DateTime constructor`: https://www.php.net/manual/en/datetime.formats.php

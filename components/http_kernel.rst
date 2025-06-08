@@ -261,18 +261,6 @@ on the request's information.
     b) A new instance of your controller class is instantiated with no
        constructor arguments.
 
-    c) If the controller implements :class:`Symfony\\Component\\DependencyInjection\\ContainerAwareInterface`,
-       ``setContainer()`` is called on the controller object and the container
-       is passed to it. This step is also specific to the  :class:`Symfony\\Bundle\\FrameworkBundle\\Controller\\ControllerResolver`
-       sub-class used by the Symfony Framework.
-
-.. deprecated:: 6.4
-
-    :class:`Symfony\\Component\\DependencyInjection\\ContainerAwareInterface` and
-    :class:`Symfony\\Component\\DependencyInjection\\ContainerAwareTrait` are
-    deprecated since Symfony 6.4. Dependency injection should be used instead to
-    access the service container.
-
 .. _component-http-kernel-kernel-controller:
 
 3) The ``kernel.controller`` Event
@@ -292,10 +280,6 @@ the controller is executed.
 Another typical use-case for this event is to retrieve the attributes from
 the controller using the :method:`Symfony\\Component\\HttpKernel\\Event\\ControllerEvent::getAttributes`
 method. See the Symfony section below for some examples.
-
-.. versionadded:: 6.2
-
-    The ``ControllerEvent::getAttributes()`` method was introduced in Symfony 6.2.
 
 Listeners to this event can also change the controller callable completely
 by calling :method:`ControllerEvent::setController <Symfony\\Component\\HttpKernel\\Event\\ControllerEvent::setController>`
@@ -355,13 +339,6 @@ of arguments that should be passed when executing that callable.
     Symfony but customization is the key here. By implementing the
     ``ValueResolverInterface`` yourself and passing this to the
     ``ArgumentResolver``, you can extend this functionality.
-
-    .. versionadded:: 6.2
-
-        The ``ValueResolverInterface`` was introduced in Symfony 6.2. Prior to
-        6.2, you had to use the
-        :class:`Symfony\\Component\\HttpKernel\\Controller\\ArgumentValueResolverInterface`,
-        which defines different methods.
 
 .. _component-http-kernel-calling-controller:
 
@@ -542,6 +519,17 @@ creates and returns a 404 ``Response``. In fact, the HttpKernel component
 comes with an :class:`Symfony\\Component\\HttpKernel\\EventListener\\ErrorListener`,
 which if you choose to use, will do this and more by default (see the sidebar
 below for more details).
+
+The :class:`Symfony\\Component\\HttpKernel\\Event\\ExceptionEvent` exposes the
+:method:`Symfony\\Component\\HttpKernel\\Event\\ExceptionEvent::isKernelTerminating`
+method, which you can use to determine if the kernel is currently terminating
+at the moment the exception was thrown.
+
+.. versionadded:: 7.1
+
+    The
+    :method:`Symfony\\Component\\HttpKernel\\Event\\ExceptionEvent::isKernelTerminating`
+    method was introduced in Symfony 7.1.
 
 .. note::
 

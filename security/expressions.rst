@@ -69,10 +69,6 @@ and ``#[IsGranted]`` attribute also accept an
             }
         }
 
-.. versionadded:: 6.2
-
-    The ``#[IsGranted]`` attribute was introduced in Symfony 6.2.
-
 In this example, if the current user has ``ROLE_ADMIN`` or if the current
 user object's ``isSuperAdmin()`` method returns ``true``, then access will
 be granted (note: your User object may not have an ``isSuperAdmin()`` method,
@@ -204,6 +200,38 @@ Inside the subject's expression, you have access to two variables:
     represents the current request.
 ``args``
     An array of controller arguments that are passed to the controller.
+
+Additionally to expressions, the ``#[IsGranted]`` attribute also accepts
+closures that return a boolean value. The subject can also be a closure that
+returns an array of values that will be injected into the closure::
+
+    // src/Controller/MyController.php
+    namespace App\Controller;
+
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+    use Symfony\Component\HttpFoundation\Response;
+    use Symfony\Component\Security\Http\Attribute\IsGranted;
+    use Symfony\Component\Security\Http\Attribute\IsGrantedContext;
+
+    class MyController extends AbstractController
+    {
+        #[IsGranted(static function (IsGrantedContext $context, mixed $subject) {
+            return $context->user === $subject['post']->getAuthor();
+        }, subject: static function (array $args) {
+            return [
+                'post' => $args['post'],
+            ];
+        })]
+        public function index($post): Response
+        {
+            // ...
+        }
+    }
+
+.. versionadded:: 7.3
+
+    The support for closures in the ``#[IsGranted]`` attribute was introduced
+    in Symfony 7.3 and requires PHP 8.5.
 
 Learn more
 ----------

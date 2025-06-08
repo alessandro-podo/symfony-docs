@@ -44,18 +44,21 @@ level of verbosity of the ``OutputInterface`` instance:
      | Processing...
      / Processing...
      - Processing...
+     ✔ Finished
 
     # OutputInterface::VERBOSITY_VERBOSE (-v)
      \ Processing... (1 sec)
      | Processing... (1 sec)
      / Processing... (1 sec)
      - Processing... (1 sec)
+     ✔ Finished (1 sec)
 
     # OutputInterface::VERBOSITY_VERY_VERBOSE (-vv) and OutputInterface::VERBOSITY_DEBUG (-vvv)
      \ Processing... (1 sec, 6.0 MiB)
      | Processing... (1 sec, 6.0 MiB)
      / Processing... (1 sec, 6.0 MiB)
      - Processing... (1 sec, 6.0 MiB)
+     ✔ Finished (1 sec, 6.0 MiB)
 
 .. tip::
 
@@ -94,6 +97,34 @@ The progress indicator will now look like this:
      ⠛ Processing...
      ⠹ Processing...
      ⢸ Processing...
+     ✔ Finished
+
+Once the progress finishes, it displays a special finished indicator (which defaults
+to ✔). You can replace it with your own::
+
+    $progressIndicator = new ProgressIndicator($output, finishedIndicatorValue: '🎉');
+    
+    try {
+        /* do something */
+        $progressIndicator->finish('Finished');
+    } catch (\Exception) {
+        $progressIndicator->finish('Failed', '🚨');
+    }
+
+The progress indicator will now look like this:
+
+.. code-block:: text
+
+     \ Processing...
+     | Processing...
+     / Processing...
+     - Processing...
+     🎉 Finished
+
+.. versionadded:: 7.2
+
+    The ``finishedIndicator`` parameter for the constructor was introduced in Symfony 7.2.
+    The ``finishedIndicator`` parameter for method ``finish()`` was introduced in Symfony 7.2.
 
 Customize Placeholders
 ~~~~~~~~~~~~~~~~~~~~~~

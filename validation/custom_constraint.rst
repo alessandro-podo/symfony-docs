@@ -39,10 +39,6 @@ First you need to create a Constraint class and extend :class:`Symfony\\Componen
 Add ``#[\Attribute]`` to the constraint class if you want to
 use it as an attribute in other classes.
 
-.. versionadded:: 6.1
-
-    The ``#[HasNamedArguments]`` attribute was introduced in Symfony 6.1.
-
 You can use ``#[HasNamedArguments]`` to make some constraint options required::
 
     // src/Validator/ContainsAlphanumeric.php
@@ -185,10 +181,7 @@ The ``addViolation()`` method call finally adds the violation to the context.
     Validation error messages are automatically translated to the current application
     locale. If your application doesn't use translations, you can disable this behavior
     by calling the ``disableTranslation()`` method of ``ConstraintViolationBuilderInterface``.
-
-    .. versionadded:: 6.4
-
-        The ``disableTranslation()`` method was introduced in Symfony 6.4.
+    See also the :ref:`framework.validation.disable_translation option <reference-validation-disable_translation>`.
 
 Using the new Validator
 -----------------------
@@ -262,7 +255,7 @@ You can use custom validators like the ones provided by Symfony itself:
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
                 $metadata->addPropertyConstraint('name', new NotBlank());
-                $metadata->addPropertyConstraint('name', new ContainsAlphanumeric(['mode' => 'loose']));
+                $metadata->addPropertyConstraint('name', new ContainsAlphanumeric(mode: 'loose'));
             }
         }
 
@@ -287,6 +280,7 @@ define those options as public properties on the constraint class::
     // src/Validator/Foo.php
     namespace App\Validator;
 
+    use Symfony\Component\Validator\Attribute\HasNamedArguments;
     use Symfony\Component\Validator\Constraint;
 
     #[\Attribute]
@@ -296,6 +290,7 @@ define those options as public properties on the constraint class::
         public $message = 'This value is invalid';
         public $optionalBarOption = false;
 
+        #[HasNamedArguments]
         public function __construct(
             $mandatoryFooOption,
             ?string $message = null,
@@ -416,10 +411,10 @@ the custom options like you pass any other option in built-in constraints:
             public static function loadValidatorMetadata(ClassMetadata $metadata)
             {
                 $metadata->addPropertyConstraint('name', new NotBlank());
-                $metadata->addPropertyConstraint('name', new Foo([
-                    'mandatoryFooOption' => 'bar',
-                    'optionalBarOption' => true,
-                ]));
+                $metadata->addPropertyConstraint('name', new Foo(
+                    mandatoryFooOption: 'bar',
+                    optionalBarOption: true,
+                ));
             }
         }
 
@@ -557,6 +552,9 @@ A class constraint validator must be applied to the class itself:
 Testing Custom Constraints
 --------------------------
 
+Atomic Constraints
+~~~~~~~~~~~~~~~~~~
+
 Use the :class:`Symfony\\Component\\Validator\\Test\\ConstraintValidatorTestCase`
 class to simplify writing unit tests for your custom constraints::
 
@@ -600,3 +598,74 @@ class to simplify writing unit tests for your custom constraints::
             // ...
         }
     }
+
+Compound Constraints
+~~~~~~~~~~~~~~~~~~~~
+
+Consider the following compound constraint that checks if a string meets
+the minimum requirements for your password policy::
+
+    // src/Validator/PasswordRequirements.php
+    namespace App\Validator;
+
+    use Symfony\Component\Validator\Constraints as Assert;
+
+    #[\Attribute]
+    class PasswordRequirements extends Assert\Compound
+    {
+        protected function getConstraints(array $options): array
+        {
+            return [
+                new Assert\NotBlank(allowNull: false),
+                new Assert\Length(min: 8, max: 255),
+                new Assert\NotCompromisedPassword(),
+                new Assert\Type('string'),
+                new Assert\Regex('/[A-Z]+/'),
+            ];
+        }
+    }
+
+You can use the :class:`Symfony\\Component\\Validator\\Test\\CompoundConstraintTestCase`
+class to check precisely which of the constraints failed to pass::
+
+    // tests/Validator/PasswordRequirementsTest.php
+    namespace App\Tests\Validator;
+
+    use App\Validator\PasswordRequirements;
+    use Symfony\Component\Validator\Constraints as Assert;
+    use Symfony\Component\Validator\Test\CompoundConstraintTestCase;
+
+    /**
+     * @extends CompoundConstraintTestCase<PasswordRequirements>
+     */
+    class PasswordRequirementsTest extends CompoundConstraintTestCase
+    {
+        public function createCompound(): Assert\Compound
+        {
+            return new PasswordRequirements();
+        }
+
+        public function testInvalidPassword(): void
+        {
+            $this->validateValue('azerty123');
+
+            // check all constraints pass except for the
+            // password leak and the uppercase letter checks
+            $this->assertViolationsRaisedByCompound([
+                new Assert\NotCompromisedPassword(),
+                new Assert\Regex('/[A-Z]+/'),
+            ]);
+        }
+
+        public function testValid(): void
+        {
+            $this->validateValue('VERYSTR0NGP4$$WORD#%!');
+
+            $this->assertNoViolation();
+        }
+    }
+
+.. versionadded:: 7.2
+
+    The :class:`Symfony\\Component\\Validator\\Test\\CompoundConstraintTestCase`
+    class was introduced in Symfony 7.2.

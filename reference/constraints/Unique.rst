@@ -95,10 +95,6 @@ Options
 
 **type**: ``array`` | ``string``
 
-.. versionadded:: 6.1
-
-    The ``fields`` option was introduced in Symfony 6.1.
-
 This is defines the key or keys in a collection that should be checked for
 uniqueness. By default, all collection keys are checked for uniqueness.
 
@@ -166,13 +162,29 @@ collection::
 
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
-                $metadata->addPropertyConstraint('coordinates', new Assert\Unique([
-                    'fields' => ['latitude', 'longitude'],
-                ]));
+                $metadata->addPropertyConstraint('coordinates', new Assert\Unique(
+                    fields: ['latitude', 'longitude'],
+                ));
             }
         }
 
 .. include:: /reference/constraints/_groups-option.rst.inc
+
+``errorPath``
+~~~~~~~~~~~~~
+
+**type**: ``string`` **default**: ``null``
+
+.. versionadded:: 7.2
+
+    The ``errorPath`` option was introduced in Symfony 7.2.
+
+If a validation error occurs, the error message is, by default, bound to the
+first element in the collection. Use this option to bind the error message to a
+specific field within the first item of the collection.
+
+The value of this option must use any :doc:`valid PropertyAccess syntax </components/property_access>`
+(e.g. ``'point_of_interest'``, ``'user.email'``).
 
 ``message``
 ~~~~~~~~~~~
@@ -203,5 +215,18 @@ PHP function to each element of the collection in order to ignore leading and
 trailing whitespace during validation.
 
 .. include:: /reference/constraints/_payload-option.rst.inc
+
+``stopOnFirstError``
+~~~~~~~~~~~~~~~~~~~~
+
+**type**: ``boolean`` **default**: ``true``
+
+By default, this constraint stops at the first violation. If this option is set
+to ``false``, validation continues on all elements and returns all detected
+:class:`Symfony\\Component\\Validator\\ConstraintViolation` objects.
+
+.. versionadded:: 7.3
+
+    The ``stopOnFirstError`` option was introduced in Symfony 7.3.
 
 .. _`PHP callable`: https://www.php.net/callable

@@ -20,11 +20,11 @@ The component supports:
 * **booleans** - ``true`` and ``false``
 * **null** - ``null``
 * **exponential** - also known as scientific (e.g. ``1.99E+3`` or ``1e-2``)
+* **comments** - using ``/*`` and ``*/`` (e.g. ``/* this is a comment */``)
 
-.. versionadded:: 6.1
+.. versionadded:: 7.2
 
-    Support for decimals without leading zeros and underscore separators were
-    introduced in Symfony 6.1.
+    The support for comments inside expressions was introduced in Symfony 7.2.
 
 .. warning::
 
@@ -116,10 +116,6 @@ operator)::
     $expressionLanguage->evaluate('fruit?.color', ['fruit' => '...'])
     $expressionLanguage->evaluate('fruit?.getStock()', ['fruit' => '...'])
 
-.. versionadded:: 6.1
-
-    The null safe operator was introduced in Symfony 6.1.
-
 .. _component-expression-null-coalescing-operator:
 
 Null-Coalescing Operator
@@ -133,15 +129,10 @@ returns the right-hand side. Expressions can chain multiple coalescing operators
 * ``foo[3] ?? 'no'``
 * ``foo.baz ?? foo['baz'] ?? 'no'``
 
-.. note::
+.. versionadded:: 7.2
 
-    The main difference with the `null-coalescing operator in PHP`_ is that
-    ExpressionLanguage will throw an exception when trying to access a
-    non-existent variable.
-
-.. versionadded:: 6.2
-
-    The null-coalescing operator was introduced in Symfony 6.2.
+    Starting from Symfony 7.2, no exception is thrown when trying to access a
+    non-existent variable. This is the same behavior as the `null-coalescing operator in PHP`_.
 
 .. _component-expression-functions:
 
@@ -154,6 +145,8 @@ following functions by default:
 
 * ``constant()``
 * ``enum()``
+* ``min()``
+* ``max()``
 
 ``constant()`` function
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -201,9 +194,37 @@ This function will return the case of an enumeration::
 
 This will print out ``true``.
 
-.. versionadded:: 6.3
+``min()`` function
+~~~~~~~~~~~~~~~~~~
 
-    The ``enum()`` function was introduced in Symfony 6.3.
+This function will return the lowest value of the given parameters. You can pass
+different types of parameters (e.g. dates, strings, numeric values) and even mix
+them (e.g. pass numeric values and strings). Internally it uses the :phpfunction:`min`
+PHP function to find the lowest value::
+
+    var_dump($expressionLanguage->evaluate(
+        'min(1, 2, 3)'
+    ));
+
+This will print out ``1``.
+
+``max()`` function
+~~~~~~~~~~~~~~~~~~
+
+This function will return the highest value of the given parameters. You can pass
+different types of parameters (e.g. dates, strings, numeric values) and even mix
+them (e.g. pass numeric values and strings). Internally it uses the :phpfunction:`max`
+PHP function to find the highest value::
+
+    var_dump($expressionLanguage->evaluate(
+        'max(1, 2, 3)'
+    ));
+
+This will print out ``3``.
+
+.. versionadded:: 7.1
+
+    The ``min()`` and ``max()`` functions were introduced in Symfony 7.1.
 
 .. tip::
 
@@ -263,6 +284,14 @@ Bitwise Operators
 * ``&`` (and)
 * ``|`` (or)
 * ``^`` (xor)
+* ``~`` (not)
+* ``<<`` (left shift)
+* ``>>`` (right shift)
+
+.. versionadded:: 7.2
+
+    Support for the ``~``, ``<<`` and ``>>`` bitwise operators was introduced
+    in Symfony 7.2.
 
 Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~
@@ -279,11 +308,6 @@ Comparison Operators
 * ``contains``
 * ``starts with``
 * ``ends with``
-
-.. versionadded:: 6.1
-
-    The ``contains``, ``starts with`` and ``ends with`` operators were introduced
-    in Symfony 6.1.
 
 .. tip::
 
@@ -321,6 +345,11 @@ Logical Operators
 * ``not`` or ``!``
 * ``and`` or ``&&``
 * ``or`` or ``||``
+* ``xor``
+
+.. versionadded:: 7.2
+
+    Support for the ``xor`` logical operator was introduced in Symfony 7.2.
 
 For example::
 
@@ -358,7 +387,7 @@ Array Operators
 * ``in`` (contain)
 * ``not in`` (does not contain)
 
-For example::
+These operators are using strict comparison. For example::
 
     class User
     {
@@ -377,12 +406,9 @@ For example::
 
 The ``$inGroup`` would evaluate to ``true``.
 
-.. deprecated:: 6.3
+.. note::
 
-    In Symfony versions previous to 6.3, ``in`` and ``not in`` operators
-    were using loose comparison. Using these operators with variables of
-    different types is now deprecated, and these operators will be using
-    strict comparison from Symfony 7.0.
+    The ``in`` and ``not in`` operators are using strict comparison.
 
 Numeric Operators
 ~~~~~~~~~~~~~~~~~
@@ -436,38 +462,40 @@ parentheses in your expressions (e.g. ``(1 + 2) * 4`` or ``1 + (2 * 4)``.
 The following table summarizes the operators and their associativity from the
 **highest to the lowest precedence**:
 
-+----------------------------------------------------------+---------------+
-| Operators                                                | Associativity |
-+==========================================================+===============+
-| ``-`` , ``+`` (unary operators that add the number sign) | none          |
-+----------------------------------------------------------+---------------+
-| ``**``                                                   | right         |
-+----------------------------------------------------------+---------------+
-| ``*``, ``/``, ``%``                                      | left          |
-+----------------------------------------------------------+---------------+
-| ``not``, ``!``                                           | none          |
-+----------------------------------------------------------+---------------+
-| ``~``                                                    | left          |
-+----------------------------------------------------------+---------------+
-| ``+``, ``-``                                             | left          |
-+----------------------------------------------------------+---------------+
-| ``..``                                                   | left          |
-+----------------------------------------------------------+---------------+
-| ``==``, ``===``, ``!=``, ``!==``,                        | left          |
-| ``<``, ``>``, ``>=``, ``<=``,                            |               |
-| ``not in``, ``in``, ``contains``,                        |               |
-| ``starts with``, ``ends with``, ``matches``              |               |
-+----------------------------------------------------------+---------------+
-| ``&``                                                    | left          |
-+----------------------------------------------------------+---------------+
-| ``^``                                                    | left          |
-+----------------------------------------------------------+---------------+
-| ``|``                                                    | left          |
-+----------------------------------------------------------+---------------+
-| ``and``, ``&&``                                          | left          |
-+----------------------------------------------------------+---------------+
-| ``or``, ``||``                                           | left          |
-+----------------------------------------------------------+---------------+
++-----------------------------------------------------------------+---------------+
+| Operators                                                       | Associativity |
++=================================================================+===============+
+| ``-`` , ``+``, ``~`` (unary operators that add the number sign) | none          |
++-----------------------------------------------------------------+---------------+
+| ``**``                                                          | right         |
++-----------------------------------------------------------------+---------------+
+| ``*``, ``/``, ``%``                                             | left          |
++-----------------------------------------------------------------+---------------+
+| ``not``, ``!``                                                  | none          |
++-----------------------------------------------------------------+---------------+
+| ``~``                                                           | left          |
++-----------------------------------------------------------------+---------------+
+| ``+``, ``-``                                                    | left          |
++-----------------------------------------------------------------+---------------+
+| ``..``, ``<<``, ``>>``                                          | left          |
++-----------------------------------------------------------------+---------------+
+| ``==``, ``===``, ``!=``, ``!==``,                               | left          |
+| ``<``, ``>``, ``>=``, ``<=``,                                   |               |
+| ``not in``, ``in``, ``contains``,                               |               |
+| ``starts with``, ``ends with``, ``matches``                     |               |
++-----------------------------------------------------------------+---------------+
+| ``&``                                                           | left          |
++-----------------------------------------------------------------+---------------+
+| ``^``                                                           | left          |
++-----------------------------------------------------------------+---------------+
+| ``|``                                                           | left          |
++-----------------------------------------------------------------+---------------+
+| ``and``, ``&&``                                                 | left          |
++-----------------------------------------------------------------+---------------+
+| ``xor``                                                         | left          |
++-----------------------------------------------------------------+---------------+
+| ``or``, ``||``                                                  | left          |
++-----------------------------------------------------------------+---------------+
 
 Built-in Objects and Variables
 ------------------------------

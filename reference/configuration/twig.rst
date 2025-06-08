@@ -30,44 +30,13 @@ compiled again automatically.
 
 .. _config-twig-autoescape:
 
-autoescape
-~~~~~~~~~~
-
-.. deprecated:: 6.1
-
-    This option is deprecated since Symfony 6.1. If required, use the
-    ``autoescape_service`` or ``autoescape_service_method`` option instead.
-
-**type**: ``boolean`` or ``string`` **default**: ``name``
-
-If set to ``false``, automatic escaping is disabled (you can still escape each content
-individually in the templates).
-
-.. danger::
-
-    Setting this option to ``false`` is dangerous and it will make your
-    application vulnerable to :ref:`XSS attacks <xss-attacks>` because most
-    third-party bundles assume that auto-escaping is enabled and they don't
-    escape contents themselves.
-
-If set to a string, the template contents are escaped using the strategy with
-that name. Allowed values are ``html``, ``js``, ``css``, ``url``, ``html_attr``
-and ``name``. The default value is ``name``. This strategy escapes contents
-according to the template name extension (e.g. it uses ``html`` for ``*.html.twig``
-templates and ``js`` for ``*.js.twig`` templates).
-
-.. tip::
-
-    See `autoescape_service`_ and `autoescape_service_method`_ to define your
-    own escaping strategy.
-
 autoescape_service
 ~~~~~~~~~~~~~~~~~~
 
 **type**: ``string`` **default**: ``null``
 
-The escaping strategy applied by default to the template is determined during
-compilation time based on the filename of the template. This means for example
+The escaping strategy applied by default to the template (to prevent :ref:`XSS attacks <xss-attacks>`)
+is determined during compilation time based on the filename of the template. This means for example
 that the contents of a ``*.html.twig`` template are escaped for HTML and the
 contents of ``*.js.twig`` are escaped for JavaScript.
 
@@ -85,15 +54,14 @@ called to determine the default escaping applied to the template.
 If the service defined in ``autoescape_service`` is invocable (i.e. it defines
 the `__invoke() PHP magic method`_) you can omit this option.
 
-.. versionadded:: 6.4
-
-    The feature to use invocable services to omit this option was introduced in
-    Symfony 6.4.
-
 base_template_class
 ~~~~~~~~~~~~~~~~~~~
 
 **type**: ``string`` **default**: ``Twig\Template``
+
+.. deprecated:: 7.1
+
+    The ``base_template_class`` option is deprecated since Symfony 7.1.
 
 Twig templates are compiled into PHP classes before using them to render
 contents. This option defines the base class from which all the template classes
@@ -103,16 +71,27 @@ application harder to maintain.
 cache
 ~~~~~
 
-**type**: ``string`` | ``false`` **default**: ``%kernel.cache_dir%/twig``
+**type**: ``string`` | ``boolean`` **default**: ``true``
 
 Before using the Twig templates to render some contents, they are compiled into
 regular PHP code. Compilation is a costly process, so the result is cached in
 the directory defined by this configuration option.
 
+You can either specify a custom path where the cache should be stored (as a
+string) or use ``true`` to let Symfony decide the default path. When set to
+``true``, the cache is stored in ``%kernel.cache_dir%/twig`` by default. However,
+if ``auto_reload`` is disabled and ``%kernel.build_dir%`` differs from
+``%kernel.cache_dir%``, the cache will be stored in ``%kernel.build_dir%/twig`` instead.
+
 Set this option to ``false`` to disable Twig template compilation. However, this
-is not recommended; not even in the ``dev`` environment, because the
-``auto_reload`` option ensures that cached templates which have changed get
-compiled again.
+is not recommended, not even in the ``dev`` environment, because the ``auto_reload``
+option ensures that cached templates which have changed get compiled again.
+
+.. versionadded:: 7.3
+
+    Support for using ``true`` as a value was introduced in Symfony 7.3. It also
+    became the default value for this option, replacing the explicit path
+    ``%kernel.cache_dir%/twig``.
 
 charset
 ~~~~~~~
@@ -182,10 +161,6 @@ file_name_pattern
 ~~~~~~~~~~~~~~~~~
 
 **type**: ``string`` or ``array`` of ``string`` **default**: ``[]``
-
-.. versionadded:: 6.1
-
-    The ``file_name_pattern`` option was introduced in Symfony 6.1.
 
 Some applications store their front-end assets in the same directory as Twig
 templates. The ``lint:twig`` command filters those files to only lint the ones
@@ -316,10 +291,6 @@ html_to_text_converter
 ......................
 
 **type**: ``string`` **default**: ``null``
-
-.. versionadded:: 6.2
-
-    The ``html_to_text_converter`` option was introduced in Symfony 6.2.
 
 The service implementing
 :class:`Symfony\\Component\\Mime\\HtmlToTextConverter\\HtmlToTextConverterInterface`

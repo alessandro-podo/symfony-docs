@@ -145,20 +145,12 @@ has some methods to filter the input values:
 :method:`Symfony\\Component\\HttpFoundation\\ParameterBag::getString`
     Returns the parameter value as a string;
 
-.. versionadded:: 6.3
-
-    The ``ParameterBag::getEnum()`` and ``ParameterBag::getString()`` methods
-    were introduced in Symfony 6.3.
-
 :method:`Symfony\\Component\\HttpFoundation\\ParameterBag::filter`
     Filters the parameter by using the PHP :phpfunction:`filter_var` function.
-
-    .. deprecated:: 6.3
-
-        Ignoring invalid values when using ``filter()`` is deprecated and will throw
-        a :class:`Symfony\\Component\\HttpKernel\\Exception\\BadRequestHttpException`
-        in Symfony 7.0. You can use the ``FILTER_NULL_ON_FAILURE`` flag to keep
-        ignoring them.
+    If invalid values are found, a
+    :class:`Symfony\\Component\\HttpKernel\\Exception\\BadRequestHttpException`
+    is thrown. The ``FILTER_NULL_ON_FAILURE`` flag can be used to ignore invalid
+    values.
 
 All getters take up to two arguments: the first one is the parameter name
 and the second one is the default value to return if the parameter does not
@@ -222,11 +214,6 @@ which returns an instance of :class:`Symfony\\Component\\HttpFoundation\\InputBa
 wrapping this data::
 
     $data = $request->getPayload();
-
-.. versionadded:: 6.3
-
-    The :method:`Symfony\\Component\\HttpFoundation\\Request::getPayload`
-    method was introduced in Symfony 6.3.
 
 Identifying a Request
 ~~~~~~~~~~~~~~~~~~~~~
@@ -375,6 +362,25 @@ analysis purposes. Use the ``anonymize()`` method from the
     $anonymousIpv6 = IpUtils::anonymize($ipv6);
     // $anonymousIpv6 = '2a01:198:603:10::'
 
+If you need even more anonymization, you can use the second and third parameters
+of the ``anonymize()`` method to specify the number of bytes that should be
+anonymized depending on the IP address format::
+
+    $ipv4 = '123.234.235.236';
+    $anonymousIpv4 = IpUtils::anonymize($ipv4, 3);
+    // $anonymousIpv4 = '123.0.0.0'
+
+    $ipv6 = '2a01:198:603:10:396e:4789:8e99:890f';
+    // (you must define the second argument (bytes to anonymize in IPv4 addresses)
+    // even when you are only anonymizing IPv6 addresses)
+    $anonymousIpv6 = IpUtils::anonymize($ipv6, 3, 10);
+    // $anonymousIpv6 = '2a01:198:603::'
+
+.. versionadded:: 7.2
+
+    The ``v4Bytes`` and ``v6Bytes`` parameters of the ``anonymize()`` method
+    were introduced in Symfony 7.2.
+
 Check If an IP Belongs to a CIDR Subnet
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -410,10 +416,6 @@ use the ``isPrivateIp()`` method from the
     $isPrivate = IpUtils::isPrivateIp($ipv6);
     // $isPrivate = false
 
-.. versionadded:: 6.3
-
-    The ``isPrivateIp()`` method was introduced in Symfony 6.3.
-
 Matching a Request Against a Set of Rules
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -423,17 +425,18 @@ address, it uses a certain HTTP method, etc.):
 
 * :class:`Symfony\\Component\\HttpFoundation\\RequestMatcher\\AttributesRequestMatcher`
 * :class:`Symfony\\Component\\HttpFoundation\\RequestMatcher\\ExpressionRequestMatcher`
+* :class:`Symfony\\Component\\HttpFoundation\\RequestMatcher\\HeaderRequestMatcher`
 * :class:`Symfony\\Component\\HttpFoundation\\RequestMatcher\\HostRequestMatcher`
 * :class:`Symfony\\Component\\HttpFoundation\\RequestMatcher\\IpsRequestMatcher`
 * :class:`Symfony\\Component\\HttpFoundation\\RequestMatcher\\IsJsonRequestMatcher`
 * :class:`Symfony\\Component\\HttpFoundation\\RequestMatcher\\MethodRequestMatcher`
 * :class:`Symfony\\Component\\HttpFoundation\\RequestMatcher\\PathRequestMatcher`
 * :class:`Symfony\\Component\\HttpFoundation\\RequestMatcher\\PortRequestMatcher`
+* :class:`Symfony\\Component\\HttpFoundation\\RequestMatcher\\QueryParameterRequestMatcher`
 * :class:`Symfony\\Component\\HttpFoundation\\RequestMatcher\\SchemeRequestMatcher`
 
 You can use them individually or combine them using the
-:class:`Symfony\\Component\\HttpFoundation\\ChainRequestMatcher`
-class::
+:class:`Symfony\\Component\\HttpFoundation\\ChainRequestMatcher` class::
 
     use Symfony\Component\HttpFoundation\ChainRequestMatcher;
     use Symfony\Component\HttpFoundation\RequestMatcher\HostRequestMatcher;
@@ -455,6 +458,11 @@ class::
     if ($matcher->matches($request)) {
         // ...
     }
+
+.. versionadded:: 7.1
+
+    The ``HeaderRequestMatcher`` and ``QueryParameterRequestMatcher`` were
+    introduced in Symfony 7.1.
 
 Accessing other Data
 ~~~~~~~~~~~~~~~~~~~~
@@ -555,12 +563,6 @@ your application to see which exceptions are thrown in listeners of the
 more about it in
 :ref:`the dedicated section about Kernel events <http-kernel-creating-listener>`.
 
-.. versionadded:: 6.4
-
-    The ``$flush`` parameter of the
-    :method:`Symfony\\Component\\HttpFoundation\\Response::send` method
-    was introduced in Symfony 6.4.
-
 Setting Cookies
 ~~~~~~~~~~~~~~~
 
@@ -600,11 +602,6 @@ It is possible to define partitioned cookies, also known as `CHIPS`_, by using t
 
     // you can also set the partitioned argument to true when using the `create()` factory method
     $cookie = Cookie::create('name', 'value', partitioned: true);
-
-.. versionadded:: 6.4
-
-    The :method:`Symfony\\Component\\HttpFoundation\\Cookie::withPartitioned`
-    method was introduced in Symfony 6.4.
 
 Managing the HTTP Cache
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -654,11 +651,6 @@ call::
         'etag'             => 'abcdef',
     ]);
 
-.. versionadded:: 6.1
-
-    The ``stale_if_error`` and ``stale_while_revalidate`` options were
-    introduced in Symfony 6.1.
-
 To check if the Response validators (``ETag``, ``Last-Modified``) match a
 conditional value specified in the client Request, use the
 :method:`Symfony\\Component\\HttpFoundation\\Response::isNotModified`
@@ -689,8 +681,19 @@ Streaming a Response
 ~~~~~~~~~~~~~~~~~~~~
 
 The :class:`Symfony\\Component\\HttpFoundation\\StreamedResponse` class allows
-you to stream the Response back to the client. The response content is
-represented by a PHP callable instead of a string::
+you to stream the Response back to the client. The response content can be
+represented by a string iterable::
+
+    use Symfony\Component\HttpFoundation\StreamedResponse;
+
+    $chunks = ['Hello', ' World'];
+
+    $response = new StreamedResponse();
+    $response->setChunks($chunks);
+    $response->send();
+
+For most complex use cases, the response content can be instead represented by
+a PHP callable::
 
     use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -718,13 +721,12 @@ represented by a PHP callable instead of a string::
         // disables FastCGI buffering in nginx only for this response
         $response->headers->set('X-Accel-Buffering', 'no');
 
+.. versionadded:: 7.3
+
+    Support for using string iterables was introduced in Symfony 7.3.
+
 Streaming a JSON Response
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 6.3
-
-    The :class:`Symfony\\Component\\HttpFoundation\\StreamedJsonResponse` class was
-    introduced in Symfony 6.3.
 
 The :class:`Symfony\\Component\\HttpFoundation\\StreamedJsonResponse` allows to
 stream large JSON responses using PHP generators to keep the used resources low.
@@ -738,9 +740,9 @@ containing JSON serializable data::
 
     // any method or function returning a PHP Generator
     function loadArticles(): \Generator {
-         yield ['title' => 'Article 1'];
-         yield ['title' => 'Article 2'];
-         yield ['title' => 'Article 3'];
+        yield ['title' => 'Article 1'];
+        yield ['title' => 'Article 2'];
+        yield ['title' => 'Article 3'];
     };
 
     $response = new StreamedJsonResponse(
@@ -814,10 +816,6 @@ including generators::
 
         return new StreamedJsonResponse(loadArticles());
     }
-
-.. versionadded:: 6.4
-
-    The ``StreamedJsonResponse`` support of iterables was introduced in Symfony 6.4.
 
 .. _component-http-foundation-serving-files:
 
@@ -895,6 +893,23 @@ or change its ``Content-Disposition``::
 It is possible to delete the file after the response is sent with the
 :method:`Symfony\\Component\\HttpFoundation\\BinaryFileResponse::deleteFileAfterSend` method.
 Please note that this will not work when the ``X-Sendfile`` header is set.
+
+Alternatively, ``BinaryFileResponse`` supports instances of ``\SplTempFileObject``.
+This is useful when you want to serve a file that has been created in memory
+and that will be automatically deleted after the response is sent::
+
+    use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
+    $file = new \SplTempFileObject();
+    $file->fwrite('Hello World');
+    $file->rewind();
+
+    $response = new BinaryFileResponse($file);
+
+.. versionadded:: 7.1
+
+    The support for ``\SplTempFileObject`` in ``BinaryFileResponse``
+    was introduced in Symfony 7.1.
 
 If the size of the served file is unknown (e.g. because it's being generated on the fly,
 or because a PHP stream filter is registered on it, etc.), you can pass a ``Stream``

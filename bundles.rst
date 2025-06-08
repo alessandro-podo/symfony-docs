@@ -58,11 +58,6 @@ Start by creating a new class called ``AcmeBlogBundle``::
     {
     }
 
-.. versionadded:: 6.1
-
-    The :class:`Symfony\\Component\\HttpKernel\\Bundle\\AbstractBundle` was
-    introduced in Symfony 6.1.
-
 .. warning::
 
     If your bundle must be compatible with previous Symfony versions you have to

@@ -111,10 +111,10 @@ One way to accomplish this is with the Expression constraint:
         {
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
-                $metadata->addConstraint(new Assert\Expression([
-                    'expression' => 'this.getCategory() in ["php", "symfony"] or !this.isTechnicalPost()',
-                    'message' => 'If this is a tech post, the category should be either php or symfony!',
-                ]));
+                $metadata->addConstraint(new Assert\Expression(
+                    expression: 'this.getCategory() in ["php", "symfony"] or !this.isTechnicalPost()',
+                    message: 'If this is a tech post, the category should be either php or symfony!',
+                ));
             }
 
             // ...
@@ -126,10 +126,6 @@ about the :doc:`expression language syntax </reference/formats/expression_langua
 
 Alternatively, you can set the ``negate`` option to ``false`` in order to
 assert that the expression must return ``true`` for validation to fail.
-
-.. versionadded:: 6.2
-
-   The ``negate`` option was introduced in Symfony 6.2.
 
 .. sidebar:: Mapping the Error to a Specific Field
 
@@ -204,10 +200,10 @@ assert that the expression must return ``true`` for validation to fail.
             {
                 public static function loadValidatorMetadata(ClassMetadata $metadata): void
                 {
-                    $metadata->addPropertyConstraint('isTechnicalPost', new Assert\Expression([
-                        'expression' => 'this.getCategory() in ["php", "symfony"] or value == false',
-                        'message' => 'If this is a tech post, the category should be either php or symfony!',
-                    ]));
+                    $metadata->addPropertyConstraint('isTechnicalPost', new Assert\Expression(
+                        expression: 'this.getCategory() in ["php", "symfony"] or value == false',
+                        message: 'If this is a tech post, the category should be either php or symfony!',
+                    ));
                 }
 
                 // ...
@@ -231,7 +227,7 @@ Options
 ``expression``
 ~~~~~~~~~~~~~~
 
-**type**: ``string`` [:ref:`default option <validation-default-option>`]
+**type**: ``string``
 
 The expression that will be evaluated. If the expression evaluates to a false
 value (using ``==``, not ``===``), validation will fail. Learn more about the
@@ -246,10 +242,6 @@ in your expression:
 
 You also have access to the ``is_valid()`` function in your expression. This function
 checks that the data passed to function doesn't raise any validation violation.
-
-.. versionadded:: 6.4
-
-    The ``is_valid()`` expression function was introduced in Symfony 6.4.
 
 .. include:: /reference/constraints/_groups-option.rst.inc
 
@@ -275,10 +267,6 @@ Parameter        Description
 **type**: ``boolean`` **default**: ``true``
 
 If ``false``, the validation fails when expression returns ``true``.
-
-.. versionadded:: 6.2
-
-   The ``negate`` option was introduced in Symfony 6.2.
 
 .. include:: /reference/constraints/_payload-option.rst.inc
 
@@ -355,10 +343,10 @@ type (numeric, boolean, strings, null, etc.)
         {
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
-                $metadata->addPropertyConstraint('metric', new Assert\Expression([
-                    'expression' => 'value + error_margin < threshold',
-                    'values' => ['error_margin' => 0.25, 'threshold' => 1.5],
-                ]));
+                $metadata->addPropertyConstraint('metric', new Assert\Expression(
+                    expression: 'value + error_margin < threshold',
+                    values: ['error_margin' => 0.25, 'threshold' => 1.5],
+                ));
             }
 
             // ...

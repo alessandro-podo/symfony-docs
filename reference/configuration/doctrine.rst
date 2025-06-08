@@ -270,17 +270,13 @@ you can control. The following configuration options exist for a mapping:
 ``type``
 ........
 
-One of ``annotation`` (for PHP annotations; it's the default value),
-``attribute`` (for PHP attributes), ``xml``, ``php`` or
-``staticphp``. This specifies which type of metadata type your mapping uses.
+One of ``attribute`` (for PHP attributes; it's the default value),
+``xml``, ``php`` or ``staticphp``. This specifies which
+type of metadata type your mapping uses.
 
 .. versionadded:: 3.0
 
     The ``yml`` mapping configuration is deprecated and was removed in Doctrine ORM 3.0.
-
-.. deprecated:: 6.4
-
-    Annotations are deprecated since Symfony 6.4, use attributes instead.
 
 See `Doctrine Metadata Drivers`_ for more information about this option.
 
@@ -487,12 +483,12 @@ set up the connection using environment variables for the certificate paths:
                 server_version: '8.0.31'
                 driver: 'pdo_mysql'
                 options:
-                    # SSL private key (PDO::MYSQL_ATTR_SSL_KEY)
-                    1007: '%env(MYSQL_SSL_KEY)%'
-                    # SSL certificate (PDO::MYSQL_ATTR_SSL_CERT)
-                    1008: '%env(MYSQL_SSL_CERT)%'
-                    # SSL CA authority (PDO::MYSQL_ATTR_SSL_CA)
-                    1009: '%env(MYSQL_SSL_CA)%'
+                    # SSL private key
+                    !php/const 'PDO::MYSQL_ATTR_SSL_KEY': '%env(MYSQL_SSL_KEY)%'
+                    # SSL certificate
+                    !php/const 'PDO::MYSQL_ATTR_SSL_CERT': '%env(MYSQL_SSL_CERT)%'
+                    # SSL CA authority
+                    !php/const 'PDO::MYSQL_ATTR_SSL_CA': '%env(MYSQL_SSL_CA)%'
 
     .. code-block:: xml
 
@@ -511,9 +507,9 @@ set up the connection using environment variables for the certificate paths:
                     server-version="8.0.31"
                     driver="pdo_mysql">
 
-                    <doctrine:option key="1007">%env(MYSQL_SSL_KEY)%</doctrine:option>
-                    <doctrine:option key="1008">%env(MYSQL_SSL_CERT)%</doctrine:option>
-                    <doctrine:option key="1009">%env(MYSQL_SSL_CA)%</doctrine:option>
+                    <doctrine:option key-type="constant" key="PDO::MYSQL_ATTR_SSL_KEY">%env(MYSQL_SSL_KEY)%</doctrine:option>
+                    <doctrine:option key-type="constant" key="PDO::MYSQL_ATTR_SSL_CERT">%env(MYSQL_SSL_CERT)%</doctrine:option>
+                    <doctrine:option key-type="constant" key="PDO::MYSQL_ATTR_SSL_CA">%env(MYSQL_SSL_CA)%</doctrine:option>
                 </doctrine:dbal>
             </doctrine:config>
         </container>

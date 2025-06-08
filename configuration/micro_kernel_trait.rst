@@ -16,9 +16,7 @@ via Composer:
 
 .. code-block:: terminal
 
-    $ composer require symfony/config symfony/http-kernel \
-      symfony/http-foundation symfony/routing \
-      symfony/dependency-injection symfony/framework-bundle
+    $ composer require symfony/framework-bundle symfony/runtime
 
 Next, create an ``index.php`` file that defines the kernel class and runs it:
 
@@ -34,18 +32,11 @@ Next, create an ``index.php`` file that defines the kernel class and runs it:
         use Symfony\Component\HttpKernel\Kernel as BaseKernel;
         use Symfony\Component\Routing\Attribute\Route;
 
-        require __DIR__.'/vendor/autoload.php';
+        require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
 
         class Kernel extends BaseKernel
         {
             use MicroKernelTrait;
-
-            public function registerBundles(): array
-            {
-                return [
-                    new Symfony\Bundle\FrameworkBundle\FrameworkBundle(),
-                ];
-            }
 
             protected function configureContainer(ContainerConfigurator $container): void
             {
@@ -64,11 +55,9 @@ Next, create an ``index.php`` file that defines the kernel class and runs it:
             }
         }
 
-        $kernel = new Kernel('dev', true);
-        $request = Request::createFromGlobals();
-        $response = $kernel->handle($request);
-        $response->send();
-        $kernel->terminate($request, $response);
+        return static function (array $context) {
+            return new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
+        };
 
     .. code-block:: php
 
@@ -80,18 +69,11 @@ Next, create an ``index.php`` file that defines the kernel class and runs it:
         use Symfony\Component\HttpKernel\Kernel as BaseKernel;
         use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 
-        require __DIR__.'/vendor/autoload.php';
+        require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
 
         class Kernel extends BaseKernel
         {
             use MicroKernelTrait;
-
-            public function registerBundles(): array
-            {
-                return [
-                    new Symfony\Bundle\FrameworkBundle\FrameworkBundle(),
-                ];
-            }
 
             protected function configureContainer(ContainerConfigurator $container): void
             {
@@ -114,21 +96,9 @@ Next, create an ``index.php`` file that defines the kernel class and runs it:
             }
         }
 
-        $kernel = new Kernel('dev', true);
-        $request = Request::createFromGlobals();
-        $response = $kernel->handle($request);
-        $response->send();
-        $kernel->terminate($request, $response);
-
-.. versionadded:: 6.1
-
-    The PHP attributes notation has been introduced in Symfony 6.1.
-
-.. note::
-
-    In addition to the ``index.php`` file, you'll need to create a directory called
-    ``config/`` in your project (even if it's empty because you define the configuration
-    options inside the ``configureContainer()`` method).
+        return static function (array $context) {
+            return new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
+        };
 
 That's it! To test it, start the :doc:`Symfony Local Web Server
 </setup/symfony_server>`:
@@ -139,6 +109,23 @@ That's it! To test it, start the :doc:`Symfony Local Web Server
 
 Then see the JSON response in your browser: http://localhost:8000/random/10
 
+.. tip::
+
+    If your kernel only defines a single controller, you can use an invokable method::
+
+        class Kernel extends BaseKernel
+        {
+            use MicroKernelTrait;
+
+            // ...
+
+            #[Route('/random/{limit}', name: 'random_number')]
+            public function __invoke(int $limit): JsonResponse
+            {
+                // ...
+            }
+        }
+
 The Methods of a "Micro" Kernel
 -------------------------------
 
@@ -146,7 +133,26 @@ When you use the ``MicroKernelTrait``, your kernel needs to have exactly three m
 that define your bundles, your services and your routes:
 
 **registerBundles()**
-    This is the same ``registerBundles()`` that you see in a normal kernel.
+    This is the same ``registerBundles()`` that you see in a normal kernel. By
+    default, the micro kernel only registers the ``FrameworkBundle``. If you need
+    to register more bundles, override this method::
+
+        use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
+        use Symfony\Bundle\TwigBundle\TwigBundle;
+        // ...
+
+        class Kernel extends BaseKernel
+        {
+            use MicroKernelTrait;
+
+            // ...
+
+            public function registerBundles(): array
+            {
+                yield new FrameworkBundle();
+                yield new TwigBundle();
+            }
+        }
 
 **configureContainer(ContainerConfigurator $container)**
     This method builds and configures the container. In practice, you will use
@@ -155,9 +161,13 @@ that define your bundles, your services and your routes:
     services directly in PHP or load external configuration files (shown below).
 
 **configureRoutes(RoutingConfigurator $routes)**
-    Your job in this method is to add routes to the application. The
-    ``RoutingConfigurator`` has methods that make adding routes in PHP more
-    fun. You can also load external routing files (shown below).
+    In this method, you can use the ``RoutingConfigurator`` object to define routes
+    in your application and associate them to the controllers defined in this very
+    same file.
+
+    However, it's more convenient to define the controller routes using PHP attributes,
+    as shown above. That's why this method is commonly used only to load external
+    routing files (e.g. from bundles) as shown below.
 
 Adding Interfaces to "Micro" Kernel
 -----------------------------------
@@ -235,7 +245,10 @@ Now it looks like this::
     namespace App;
 
     use App\DependencyInjection\AppExtension;
+    use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
     use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
+    use Symfony\Bundle\TwigBundle\TwigBundle;
+    use Symfony\Bundle\WebProfilerBundle\WebProfilerBundle;
     use Symfony\Component\DependencyInjection\ContainerBuilder;
     use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
     use Symfony\Component\HttpKernel\Kernel as BaseKernel;
@@ -245,18 +258,14 @@ Now it looks like this::
     {
         use MicroKernelTrait;
 
-        public function registerBundles(): array
+        public function registerBundles(): iterable
         {
-            $bundles = [
-                new \Symfony\Bundle\FrameworkBundle\FrameworkBundle(),
-                new \Symfony\Bundle\TwigBundle\TwigBundle(),
-            ];
+            yield new FrameworkBundle();
+            yield new TwigBundle();
 
             if ('dev' === $this->getEnvironment()) {
-                $bundles[] = new \Symfony\Bundle\WebProfilerBundle\WebProfilerBundle();
+                yield new WebProfilerBundle();
             }
-
-            return $bundles;
         }
 
         protected function build(ContainerBuilder $containerBuilder): void
@@ -288,8 +297,8 @@ Now it looks like this::
         {
             // import the WebProfilerRoutes, only if the bundle is enabled
             if (isset($this->bundles['WebProfilerBundle'])) {
-                $routes->import('@WebProfilerBundle/Resources/config/routing/wdt.xml')->prefix('/_wdt');
-                $routes->import('@WebProfilerBundle/Resources/config/routing/profiler.xml')->prefix('/_profiler');
+                $routes->import('@WebProfilerBundle/Resources/config/routing/wdt.php', 'php')->prefix('/_wdt');
+                $routes->import('@WebProfilerBundle/Resources/config/routing/profiler.php', 'php')->prefix('/_profiler');
             }
 
             // load the routes defined as PHP attributes
@@ -297,18 +306,15 @@ Now it looks like this::
             $routes->import(__DIR__.'/Controller/', 'attribute');
         }
 
-        // optional, to use the standard Symfony cache directory
-        public function getCacheDir(): string
-        {
-            return __DIR__.'/../var/cache/'.$this->getEnvironment();
-        }
-
-        // optional, to use the standard Symfony logs directory
-        public function getLogDir(): string
-        {
-            return __DIR__.'/../var/log';
-        }
+        // optionally, you can define the getCacheDir() and getLogDir() methods
+        // to override the default locations for these directories
     }
+
+
+.. versionadded:: 7.3
+
+    The ``wdt.php`` and ``profiler.php`` files were introduced in Symfony 7.3.
+    Previously, you had to import ``wdt.xml`` and ``profiler.xml``
 
 Before continuing, run this command to add support for the new dependencies:
 
@@ -344,10 +350,6 @@ add a service conditionally based on the ``foo`` value::
             }
         }
     }
-
-.. versionadded:: 6.1
-
-    The ``AbstractExtension`` class was introduced in Symfony 6.1.
 
 Unlike the previous kernel, this loads an external ``config/framework.yaml`` file,
 because the configuration started to get bigger:

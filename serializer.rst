@@ -386,10 +386,6 @@ properties with a ``null`` value only for one serialize call::
 Using Context Builders
 """"""""""""""""""""""
 
-.. versionadded:: 6.1
-
-    Context builders were introduced in Symfony 6.1.
-
 You can use "context builders" to help define the (de)serialization
 context. Context builders are PHP objects that provide autocompletion,
 validation, and documentation of context options::
@@ -1000,10 +996,6 @@ For nested classes, you have to add a PHPDoc type to the property, constructor o
 Deserializing Nested Structures
 -------------------------------
 
-.. versionadded:: 6.2
-
-    The option to configure a ``SerializedPath`` was introduced in Symfony 6.2.
-
 Some APIs might provide verbose nested structures that you want to flatten
 in the PHP object. For instance, imagine a JSON response like this:
 
@@ -1247,6 +1239,71 @@ setting the ``name_converter`` setting to
         ];
         $serializer = new Serializer($normalizers, $encoders);
 
+snake_case to CamelCase
+~~~~~~~~~~~~~~~~~~~~~~~
+
+In Symfony applications, it is common to use camelCase for naming properties.
+However some packages may follow a snake_case convention.
+
+Symfony provides a built-in name converter designed to transform between
+CamelCase and snake_case styles during serialization and deserialization
+processes. You can use it instead of the metadata-aware name converter by
+setting the ``name_converter`` setting to
+``serializer.name_converter.snake_case_to_camel_case``:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/serializer.yaml
+        framework:
+            serializer:
+                name_converter: 'serializer.name_converter.snake_case_to_camel_case'
+
+    .. code-block:: xml
+
+        <!-- config/packages/serializer.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                https://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/symfony https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+            <framework:config>
+                <framework:serializer
+                    name-converter="serializer.name_converter.snake_case_to_camel_case"
+                />
+            </framework:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/serializer.php
+        use Symfony\Config\FrameworkConfig;
+
+        return static function (FrameworkConfig $framework): void {
+            $framework->serializer()
+                ->nameConverter('serializer.name_converter.snake_case_to_camel_case')
+            ;
+        };
+
+    .. code-block:: php-standalone
+
+        use Symfony\Component\Serializer\NameConverter\SnakeCaseToCamelCaseNameConverter;
+        use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+
+        // ...
+        $normalizers = [
+            new ObjectNormalizer(null, new SnakeCaseToCamelCaseNameConverter()),
+        ];
+        $serializer = new Serializer($normalizers, $encoders);
+
+.. versionadded:: 7.2
+
+    The snake_case to CamelCase converter was introduced in Symfony 7.2.
+
 .. _serializer-built-in-normalizers:
 
 Serializer Normalizers
@@ -1279,11 +1336,21 @@ normalizers (in order of priority):
 
 :class:`Symfony\\Component\\Serializer\\Normalizer\\DateTimeNormalizer`
     This normalizes between :phpclass:`DateTimeInterface` objects (e.g.
-    :phpclass:`DateTime` and :phpclass:`DateTimeImmutable`) and strings.
+    :phpclass:`DateTime` and :phpclass:`DateTimeImmutable`) and strings,
+    integers or floats.
 
-    By default, the `RFC 3339`_ format is used when normalizing the value.
-    Use ``DateTimeNormalizer::FORMAT_KEY`` and ``DateTimeNormalizer::TIMEZONE_KEY``
-    to change the format.
+    :phpclass:`DateTime` and :phpclass:`DateTimeImmutable`) into strings,
+    integers or floats. By default, it converts them to strings using the
+    `RFC 3339`_ format. Use ``DateTimeNormalizer::FORMAT_KEY`` and
+    ``DateTimeNormalizer::TIMEZONE_KEY`` to change the format.
+
+    To convert the objects to integers or floats, set the serializer
+    context option ``DateTimeNormalizer::CAST_KEY`` to ``int`` or
+    ``float``.
+
+    .. versionadded:: 7.1
+
+        The ``DateTimeNormalizer::CAST_KEY`` context option was introduced in Symfony 7.1.
 
 :class:`Symfony\\Component\\Serializer\\Normalizer\\ConstraintViolationListNormalizer`
     This normalizer converts objects that implement
@@ -1313,12 +1380,6 @@ normalizers (in order of priority):
     You can define the locale to use to translate the object by setting the
     ``TranslatableNormalizer::NORMALIZATION_LOCALE_KEY`` context option.
 
-    .. versionadded:: 6.4
-
-        The ``UidNormalizer`` normalization formats were introduced in Symfony 5.3.
-        The :class:`Symfony\\Component\\Serializer\\Normalizer\\TranslatableNormalizer`
-        was introduced in Symfony 6.4.
-
 :class:`Symfony\\Component\\Serializer\\Normalizer\\BackedEnumNormalizer`
     This normalizer converts between :phpclass:`BackedEnum` enums and
     strings or integers.
@@ -1326,9 +1387,13 @@ normalizers (in order of priority):
     By default, an exception is thrown when data is not a valid backed enumeration. If you
     want ``null`` instead, you can set the ``BackedEnumNormalizer::ALLOW_INVALID_VALUES`` option.
 
-    .. versionadded:: 6.3
+:class:`Symfony\\Component\\Serializer\\Normalizer\\NumberNormalizer`
+    This normalizer converts between :phpclass:`BcMath\\Number` or :phpclass:`GMP` objects and
+    strings or integers.
 
-        The ``BackedEnumNormalizer::ALLOW_INVALID_VALUES`` context option was introduced in Symfony 6.3.
+.. versionadded:: 7.2
+
+    The ``NumberNormalizer`` was introduced in Symfony 7.2.
 
 :class:`Symfony\\Component\\Serializer\\Normalizer\\DataUriNormalizer`
     This normalizer converts between :phpclass:`SplFileInfo` objects and a
@@ -1502,17 +1567,256 @@ like:
             PropertyNormalizer::NORMALIZE_VISIBILITY => PropertyNormalizer::NORMALIZE_PUBLIC | PropertyNormalizer::NORMALIZE_PROTECTED,
         ]);
 
-    .. versionadded:: 6.2
+Named Serializers
+-----------------
 
-        The ``PropertyNormalizer::NORMALIZE_VISIBILITY`` context option and its
-        values were introduced in Symfony 6.2.
+.. versionadded:: 7.2
+
+    Named serializers were introduced in Symfony 7.2.
+
+Sometimes, you may need multiple configurations for the serializer, such as
+different default contexts, name converters, or sets of normalizers and encoders,
+depending on the use case. For example, when your application communicates with
+multiple APIs, each of which follows its own set of serialization rules.
+
+You can achieve this by configuring multiple serializer instances using
+the ``named_serializers`` option:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/serializer.yaml
+        framework:
+            serializer:
+                named_serializers:
+                    api_client1:
+                        name_converter: 'serializer.name_converter.camel_case_to_snake_case'
+                        default_context:
+                            enable_max_depth: true
+                    api_client2:
+                        default_context:
+                            enable_max_depth: false
+
+    .. code-block:: xml
+
+        <!-- config/packages/serializer.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                https://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/symfony https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+            <framework:config>
+                <framework:serializer>
+
+                    <framework:named-serializer
+                        name="api_client1"
+                        name-converter="serializer.name_converter.camel_case_to_snake_case"
+                    >
+                        <framework:default-context>
+                            <framework:enable_max_depth>true</framework:enable_max_depth>
+                        </framework:default-context>
+                    </framework:named-serializer>
+
+                    <framework:named-serializer name="api_client2">
+                        <framework:default-context>
+                            <framework:enable_max_depth>false</framework:enable_max_depth>
+                        </framework:default-context>
+                    </framework:named-serializer>
+
+                </framework:serializer>
+            </framework:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/serializer.php
+        use Symfony\Config\FrameworkConfig;
+
+        return static function (FrameworkConfig $framework): void {
+            $framework->serializer()
+                ->namedSerializer('api_client1')
+                    ->nameConverter('serializer.name_converter.camel_case_to_snake_case')
+                    ->defaultContext([
+                        'enable_max_depth' => true,
+                    ])
+            ;
+            $framework->serializer()
+                ->namedSerializer('api_client2')
+                    ->defaultContext([
+                        'enable_max_depth' => false,
+                    ])
+            ;
+        };
+
+You can inject these different serializer instances
+using :ref:`named aliases <autowiring-multiple-implementations-same-type>`::
+
+    namespace App\Controller;
+
+    // ...
+    use Symfony\Component\DependencyInjection\Attribute\Target;
+
+    class PersonController extends AbstractController
+    {
+        public function index(
+            SerializerInterface $serializer,           // default serializer
+            SerializerInterface $apiClient1Serializer, // api_client1 serializer
+            #[Target('apiClient2.serializer')]         // api_client2 serializer
+            SerializerInterface $customName,
+        ) {
+            // ...
+        }
+    }
+
+By default, named serializers use the built-in set of normalizers and encoders,
+just like the main serializer service. However, you can customize them by
+registering additional normalizers or encoders for a specific named serializer.
+To do that, add a ``serializer`` attribute to
+the :ref:`serializer.normalizer <reference-dic-tags-serializer-normalizer>`
+or :ref:`serializer.encoder <reference-dic-tags-serializer-encoder>` tags:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/services.yaml
+        services:
+            # ...
+
+            Symfony\Component\Serializer\Normalizer\CustomNormalizer:
+                # prevent this normalizer from being automatically added to the default serializer
+                autoconfigure: false
+                tags:
+                    # add this normalizer only to a specific named serializer
+                    - serializer.normalizer: { serializer: 'api_client1' }
+                    # add this normalizer to several named serializers
+                    - serializer.normalizer: { serializer: [ 'api_client1', 'api_client2' ] }
+                    # add this normalizer to all serializers, including the default one
+                    - serializer.normalizer: { serializer: '*' }
+
+    .. code-block:: xml
+
+        <!-- config/services.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                https://symfony.com/schema/dic/services/services-1.0.xsd">
+
+            <services>
+                <!-- ... -->
+
+                <!-- prevent this normalizer from being automatically added to the default serializer -->
+                <service
+                    id="Symfony\Component\Serializer\Normalizer\CustomNormalizer"
+                    autoconfigure="false"
+                >
+                    <!-- add this normalizer only to a specific named serializer -->
+                    <tag name="serializer.normalizer" serializer="api_client1"/>
+
+                    <!-- add this normalizer to several named serializers -->
+                    <tag name="serializer.normalizer" serializer="api_client1"/>
+                    <tag name="serializer.normalizer" serializer="api_client2"/>
+
+                    <!-- add this normalizer to all serializers, including the default one -->
+                    <tag name="serializer.normalizer" serializer="*"/>
+                </service>
+            </services>
+        </container>
+
+    .. code-block:: php
+
+        // config/services.php
+        namespace Symfony\Component\DependencyInjection\Loader\Configurator;
+
+        use Symfony\Component\Serializer\Normalizer\CustomNormalizer;
+
+        return function(ContainerConfigurator $container) {
+            // ...
+
+            $services->set(CustomNormalizer::class)
+                // prevent this normalizer from being automatically added to the default serializer
+                ->autoconfigure(false)
+
+                // add this normalizer only to a specific named serializer
+                ->tag('serializer.normalizer', ['serializer' => 'api_client1'])
+                // add this normalizer to several named serializers
+                ->tag('serializer.normalizer', ['serializer' => ['api_client1', 'api_client2']])
+                // add this normalizer to all serializers, including the default one
+                ->tag('serializer.normalizer', ['serializer' => '*'])
+            ;
+        };
+
+When the ``serializer`` attribute is not set, the service is registered only with
+the default serializer.
+
+Each normalizer or encoder used in a named serializer is tagged with a
+``serializer.normalizer.<name>`` or ``serializer.encoder.<name>`` tag.
+You can inspect their priorities using the following command:
+
+.. code-block:: terminal
+
+    $ php bin/console debug:container --tag serializer.<normalizer|encoder>.<name>
+
+Additionally, you can exclude the default set of normalizers and encoders from a
+named serializer by setting the ``include_built_in_normalizers`` and
+``include_built_in_encoders`` options to ``false``:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/serializer.yaml
+        framework:
+            serializer:
+                named_serializers:
+                    api_client1:
+                        include_built_in_normalizers: false
+                        include_built_in_encoders: true
+
+    .. code-block:: xml
+
+        <!-- config/packages/serializer.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                https://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/symfony https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+            <framework:config>
+                <framework:serializer>
+
+                    <framework:named-serializer
+                        name="api_client1"
+                        include-built-in-normalizers="false"
+                        include-built-in-encoders="true"
+                    />
+
+                </framework:serializer>
+            </framework:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/serializer.php
+        use Symfony\Config\FrameworkConfig;
+
+        return static function (FrameworkConfig $framework): void {
+            $framework->serializer()
+                ->namedSerializer('api_client1')
+                    ->includeBuiltInNormalizers(false)
+                    ->includeBuiltInEncoders(true)
+            ;
+        };
 
 Debugging the Serializer
 ------------------------
-
-.. versionadded:: 6.3
-
-    The ``debug:serializer`` command was introduced in Symfony 6.3.
 
 Use the ``debug:serializer`` command to dump the serializer metadata of a
 given class:
@@ -1531,20 +1835,22 @@ given class:
         |          |   "groups" => [                                            |
         |          |       "book:read",                                         |
         |          |       "book:write",                                        |
-        |          |   ]                                                        |
+        |          |   ],                                                       |
         |          |   "maxDepth" => 1,                                         |
-        |          |   "serializedName" => "book_name"                          |
-        |          |   "ignore" => false                                        |
+        |          |   "serializedName" => "book_name",                         |
+        |          |   "serializedPath" => null,                                |
+        |          |   "ignore" => false,                                       |
         |          |   "normalizationContexts" => [],                           |
         |          |   "denormalizationContexts" => []                          |
         |          | ]                                                          |
         | isbn     | [                                                          |
         |          |   "groups" => [                                            |
         |          |       "book:read",                                         |
-        |          |   ]                                                        |
+        |          |   ],                                                       |
         |          |   "maxDepth" => null,                                      |
-        |          |   "serializedName" => null                                 |
-        |          |   "ignore" => false                                        |
+        |          |   "serializedName" => null,                                |
+        |          |   "serializedPath" => "[data][isbn]",                      |
+        |          |   "ignore" => false,                                       |
         |          |   "normalizationContexts" => [],                           |
         |          |   "denormalizationContexts" => []                          |
         |          | ]                                                          |
@@ -1857,11 +2163,6 @@ Advanced Deserialization
 Require all Properties
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 6.3
-
-    The ``AbstractNormalizer::PREVENT_NULLABLE_FALLBACK`` context option
-    was introduced in Symfony 6.3.
-
 By default, the Serializer will add ``null`` to nullable properties when
 the parameters for those are not provided. You can change this behavior by
 setting the ``AbstractNormalizer::REQUIRE_ALL_PROPERTIES`` context option
@@ -2083,6 +2384,70 @@ correct class for properties typed as ``InvoiceItemInterface``::
         $invoiceLine = $serializer->deserialize($jsonString, InvoiceLine::class, 'json');
         // $invoiceLine contains new InvoiceLine(new Product(...))
 
+You can add a default type to avoid the need to add the type property
+when deserializing:
+
+.. configuration-block::
+
+    .. code-block:: php-attributes
+
+        namespace App\Model;
+
+        use Symfony\Component\Serializer\Attribute\DiscriminatorMap;
+
+        #[DiscriminatorMap(
+            typeProperty: 'type',
+            mapping: [
+                'product' => Product::class,
+                'shipping' => Shipping::class,
+            ],
+            defaultType: 'product',
+        )]
+        interface InvoiceItemInterface
+        {
+            // ...
+        }
+
+    .. code-block:: yaml
+
+        App\Model\InvoiceItemInterface:
+            discriminator_map:
+                type_property: type
+                mapping:
+                    product: 'App\Model\Product'
+                    shipping: 'App\Model\Shipping'
+                default_type: product
+
+    .. code-block:: xml
+
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <serializer xmlns="http://symfony.com/schema/dic/serializer-mapping"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://symfony.com/schema/dic/serializer-mapping
+                https://symfony.com/schema/dic/serializer-mapping/serializer-mapping-1.0.xsd"
+        >
+            <class name="App\Model\InvoiceItemInterface">
+                <discriminator-map type-property="type" default-type="product">
+                    <mapping type="product" class="App\Model\Product"/>
+                    <mapping type="shipping" class="App\Model\Shipping"/>
+                </discriminator-map>
+            </class>
+        </serializer>
+
+Now it deserializes like this:
+
+.. configuration-block::
+
+    .. code-block:: php
+
+        // $jsonString does NOT contain "type" in "invoiceItem"
+        $invoiceLine = $serializer->deserialize('{"invoiceItem":{...},...}', InvoiceLine::class, 'json');
+        // $invoiceLine contains new InvoiceLine(new Product(...))
+
+.. versionadded:: 7.3
+
+    The ``defaultType`` parameter was added in Symfony 7.3.
+
 .. _serializer-unwrapping-denormalizer:
 
 Deserializing Input Partially (Unwrapping)
@@ -2140,6 +2505,32 @@ type of the property is ``int``, an
 will be thrown. The type enforcement of the properties can be disabled by
 setting the serializer context option
 ``ObjectNormalizer::DISABLE_TYPE_ENFORCEMENT`` to ``true``.
+
+Handling Boolean Values
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 7.1
+
+    The ``AbstractNormalizer::FILTER_BOOL`` context option was introduced in Symfony 7.1.
+
+PHP considers many different values as true or false. For example, the
+strings ``true``, ``1``, and ``yes`` are considered true, while
+``false``, ``0``, and ``no`` are considered false.
+
+When deserializing, the Serializer component can take care of this
+automatically. This can be done by using the ``AbstractNormalizer::FILTER_BOOL``
+context option::
+
+    use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+    // ...
+
+    $person = $serializer->denormalize(['sportsperson' => 'yes'], Person::class, context: [
+        AbstractNormalizer::FILTER_BOOL => true
+    ]);
+    // $person contains a Person instance with sportsperson set to true
+
+This context makes the deserialization process behave like the
+:phpfunction:`filter_var` function with the ``FILTER_VALIDATE_BOOL`` flag.
 
 .. _serializer-enabling-metadata-cache:
 

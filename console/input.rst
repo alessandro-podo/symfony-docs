@@ -311,6 +311,42 @@ The above code can be simplified as follows because ``false !== null``::
     $yell = ($optionValue !== false);
     $yellLouder = ($optionValue === 'louder');
 
+Fetching The Raw Command Input
+------------------------------
+
+Symfony provides a :method:`Symfony\\Component\\Console\\Input\\ArgvInput::getRawTokens`
+method to fetch the raw input that was passed to the command. This is useful if
+you want to parse the input yourself or when you need to pass the input to another
+command without having to worry about the number of arguments or options::
+
+    // ...
+    use Symfony\Component\Process\Process;
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        // if this command was run as:
+        // php bin/console app:my-command foo --bar --baz=3 --qux=value1 --qux=value2
+
+        $tokens = $input->getRawTokens();
+        // $tokens = ['app:my-command', 'foo', '--bar', '--baz=3', '--qux=value1', '--qux=value2'];
+
+        // pass true as argument to not include the original command name
+        $tokens = $input->getRawTokens(true);
+        // $tokens = ['foo', '--bar', '--baz=3', '--qux=value1', '--qux=value2'];
+
+        // pass the raw input to any other command (from Symfony or the operating system)
+        $process = new Process(['app:other-command', ...$input->getRawTokens(true)]);
+        $process->setTty(true);
+        $process->mustRun();
+
+        // ...
+    }
+
+.. versionadded:: 7.1
+
+    The :method:`Symfony\\Component\\Console\\Input\\ArgvInput::getRawTokens`
+    method was introduced in Symfony 7.1.
+
 Adding Argument/Option Value Completion
 ---------------------------------------
 
@@ -353,12 +389,6 @@ To achieve this, use the 5th argument of ``addArgument()`` or the 6th argument o
             ;
         }
     }
-
-.. versionadded:: 6.1
-
-    The argument to ``addOption()``/``addArgument()`` was introduced in
-    Symfony 6.1. Prior to this version, you had to override the
-    ``complete()`` method of the command.
 
 That's all you need! Assuming users "Fabien" and "Fabrice" exist, pressing
 tab after typing ``app:greet Fa`` will give you these names as a suggestion.
@@ -416,11 +446,16 @@ The Console component adds some predefined options to all commands:
 
 * ``--verbose``: sets the verbosity level (e.g. ``1`` the default, ``2`` and
   ``3``, or you can use respective shortcuts ``-v``, ``-vv`` and ``-vvv``)
-* ``--quiet``: disables output and interaction
+* ``--silent``: disables all output and interaction, including errors
+* ``--quiet``: disables output and interaction, but errors are still displayed
 * ``--no-interaction``: disables interaction
 * ``--version``: outputs the version number of the console application
 * ``--help``: displays the command help
 * ``--ansi|--no-ansi``: whether to force of disable coloring the output
+
+.. versionadded:: 7.2
+
+    The ``--silent`` option was introduced in Symfony 7.2.
 
 When using the ``FrameworkBundle``, two more options are predefined:
 

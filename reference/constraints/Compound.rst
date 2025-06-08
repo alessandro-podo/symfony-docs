@@ -35,9 +35,9 @@ you can create your own named set or requirements to be reused consistently ever
                 return [
                     new Assert\NotBlank(),
                     new Assert\Type('string'),
-                    new Assert\Length(['min' => 12]),
+                    new Assert\Length(min: 12),
                     new Assert\NotCompromisedPassword(),
-                    new Assert\PasswordStrength(['minScore' => 4]),
+                    new Assert\PasswordStrength(minScore: 4),
                 ];
             }
         }
@@ -101,6 +101,50 @@ You can now use it anywhere you need it:
                 $metadata->addPropertyConstraint('plainPassword', new Assert\PasswordRequirements());
             }
         }
+
+Validation groups and payload can be passed via constructor:
+
+.. configuration-block::
+
+    .. code-block:: php-attributes
+
+        // src/Entity/User.php
+        namespace App\Entity\User;
+
+        use App\Validator\Constraints as Assert;
+
+        class User
+        {
+            #[Assert\PasswordRequirements(
+                groups: ['registration'],
+                payload: ['severity' => 'error'],
+            )]
+            public string $plainPassword;
+        }
+
+    .. code-block:: php
+
+        // src/Entity/User.php
+        namespace App\Entity\User;
+
+        use App\Validator\Constraints as Assert;
+        use Symfony\Component\Validator\Mapping\ClassMetadata;
+
+        class User
+        {
+            public static function loadValidatorMetadata(ClassMetadata $metadata): void
+            {
+                $metadata->addPropertyConstraint('plainPassword', new Assert\PasswordRequirements(
+                    groups: ['registration'],
+                    payload: ['severity' => 'error'],
+                ));
+            }
+        }
+
+.. versionadded:: 7.2
+
+    Support for passing validation groups and the payload to the constructor
+    of the ``Compound`` class was introduced in Symfony 7.2.
 
 Options
 -------

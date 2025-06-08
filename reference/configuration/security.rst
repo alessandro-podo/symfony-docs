@@ -23,7 +23,8 @@ key in your application configuration.
 
 * `access_denied_url`_
 * `erase_credentials`_
-* `hide_user_not_found`_
+* `expose_security_errors`_
+* `hide_user_not_found`_ (deprecated)
 * `session_fixation_strategy`_
 
 **Advanced Options**:
@@ -51,12 +52,58 @@ erase_credentials
 **type**: ``boolean`` **default**: ``true``
 
 If ``true``, the ``eraseCredentials()`` method of the user object is called
-after authentication.
+after authentication::
+
+    use Symfony\Component\Security\Core\User\UserInterface;
+
+    class User implements UserInterface
+    {
+        // ...
+
+        public function eraseCredentials(): void
+        {
+            // If you store any temporary, sensitive data on the user, clear it here
+            // $this->plainPassword = null;
+        }
+    }
+
+.. deprecated:: 7.3
+
+   Since Symfony 7.3, ``eraseCredentials()`` methods are deprecated and are
+   not called if they have the ``#[\Deprecated]`` attribute.
+
+expose_security_errors
+----------------------
+
+**type**: ``string`` **default**: ``'none'``
+
+.. versionadded:: 7.3
+
+    The ``expose_security_errors`` option was introduced in Symfony 7.3
+
+User enumeration is a common security issue where attackers infer valid usernames
+based on error messages. For example, a message like "This user does not exist"
+shown by your login form reveals whether a username exists.
+
+This option lets you hide some or all errors related to user accounts
+(e.g. blocked or expired accounts) to prevent this issue. Instead, these
+errors will trigger a generic ``BadCredentialsException``. The value of this
+option can be one of the following:
+
+* ``'none'``: hides all user-related security exceptions;
+* ``'account_status'``: shows account-related exceptions (e.g. blocked or expired
+  accounts) but only for users who provided the correct password;
+* ``'all'``: shows all security-related exceptions.
 
 hide_user_not_found
 -------------------
 
 **type**: ``boolean`` **default**: ``true``
+
+.. deprecated:: 7.3
+
+    The ``hide_user_not_found`` option was deprecated in favor of the
+    ``expose_security_errors`` option in Symfony 7.3.
 
 If ``true``, when a user is not found a generic exception of type
 :class:`Symfony\\Component\\Security\\Core\\Exception\\BadCredentialsException`
@@ -486,10 +533,6 @@ It's also possible to use ``*`` as a wildcard for all directives:
                     ->clearSiteData(['cookies', 'storage']);
         };
 
-.. versionadded:: 6.3
-
-    The ``clear_site_data`` option was introduced in Symfony 6.3.
-
 invalidate_session
 ..................
 
@@ -529,10 +572,6 @@ enable_csrf
 Set this option to ``true`` to enable CSRF protection in the logout process
 using Symfony's default CSRF token manager. Set also the ``csrf_token_manager``
 option if you need to use a custom CSRF token manager.
-
-.. versionadded:: 6.2
-
-    The ``enable_csrf`` option was introduced in Symfony 6.2.
 
 csrf_parameter
 ..............
@@ -795,10 +834,6 @@ user_identifier
 ...............
 
 **type**: ``string`` **default**: ``emailAddress``
-
-.. versionadded:: 6.3
-
-    The ``user_identifier`` option was introduced in Symfony 6.3.
 
 The value of this option tells Symfony which parameter to use to find the user
 identifier in the "distinguished name".

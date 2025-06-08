@@ -106,6 +106,33 @@ if the expression is not valid::
 
     $expressionLanguage->lint('1 + 2', []); // doesn't throw anything
 
+    $expressionLanguage->lint('1 + a', []);
+    // throws a SyntaxError exception:
+    // "Variable "a" is not valid around position 5 for expression `1 + a`."
+
+The behavior of these methods can be configured with some flags defined in the
+:class:`Symfony\\Component\\ExpressionLanguage\\Parser` class:
+
+* ``IGNORE_UNKNOWN_VARIABLES``: don't throw an exception if a variable is not
+  defined in the expression;
+* ``IGNORE_UNKNOWN_FUNCTIONS``: don't throw an exception if a function is not
+  defined in the expression.
+
+This is how you can use these flags::
+
+    use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
+    use Symfony\Component\ExpressionLanguage\Parser;
+
+    $expressionLanguage = new ExpressionLanguage();
+
+    // does not throw a SyntaxError because the unknown variables and functions are ignored
+    $expressionLanguage->lint('unknown_var + unknown_function()', [], Parser::IGNORE_UNKNOWN_VARIABLES | Parser::IGNORE_UNKNOWN_FUNCTIONS);
+
+.. versionadded:: 7.1
+
+    The support for flags in the ``parse()`` and ``lint()`` methods
+    was introduced in Symfony 7.1.
+
 Passing in Variables
 --------------------
 

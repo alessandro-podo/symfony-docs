@@ -193,14 +193,7 @@ from the `MakerBundle`_:
             return $this;
         }
 
-        /**
-         * @see UserInterface
-         */
-        public function eraseCredentials(): void
-        {
-            // If you store any temporary, sensitive data on the user, clear it here
-            // $this->plainPassword = null;
-        }
+        // [...]
     }
 
 .. tip::
@@ -449,6 +442,8 @@ the database::
     Doctrine repository class related to the user class must implement the
     :class:`Symfony\\Component\\Security\\Core\\User\\PasswordUpgraderInterface`.
 
+.. _security-make-registration-form:
+
 .. tip::
 
     The ``make:registration-form`` maker command can help you set-up the
@@ -468,12 +463,6 @@ You can also manually hash a password by running:
 
 Read more about all available hashers and password migration in
 :doc:`security/passwords`.
-
-.. versionadded:: 6.2
-
-    In applications using Symfony 6.2 and PHP 8.2 or newer, the
-    `SensitiveParameter PHP attribute`_ is applied to all plain passwords and
-    sensitive tokens so they don't appear in stack traces.
 
 .. _firewalls-authentication:
 .. _a-authentication-firewalls:
@@ -626,10 +615,6 @@ don't accidentally block Symfony's dev tools - which live under URLs like
 
     This feature is not supported by the XML configuration format.
 
-    .. versionadded:: 6.4
-
-        The feature to use an array of regex was introduced in Symfony 6.4.
-
 A firewall can have many modes of authentication, in other words, it enables many
 ways to ask the question "Who are you?". Often, the user is unknown (i.e. not logged in)
 when they first visit your website. If you visit your homepage right now, you *will*
@@ -694,10 +679,6 @@ use the :class:`Symfony\\Bundle\\SecurityBundle\\Security` service::
             // ...
         }
     }
-
-.. versionadded:: 6.2
-
-    The ``getFirewallConfig()`` method was introduced in Symfony 6.2.
 
 .. _security-authenticators:
 
@@ -1749,17 +1730,6 @@ for more information about this.
 Login Programmatically
 ----------------------
 
-.. versionadded:: 6.2
-
-    The :class:`Symfony\Bundle\SecurityBundle\Security <Symfony\\Bundle\\SecurityBundle\\Security>`
-    class was introduced in Symfony 6.2. Prior to 6.2, it was called
-    ``Symfony\Component\Security\Core\Security``.
-
-.. versionadded:: 6.2
-
-    The :method:`Symfony\\Bundle\\SecurityBundle\\Security::login`
-    method was introduced in Symfony 6.2.
-
 You can log in a user programmatically using the ``login()`` method of the
 :class:`Symfony\\Bundle\\SecurityBundle\\Security` helper::
 
@@ -1789,8 +1759,11 @@ You can log in a user programmatically using the ``login()`` method of the
             // you can also log in on a different firewall...
             $security->login($user, 'form_login', 'other_firewall');
 
-            // ...and add badges
+            // ... add badges...
             $security->login($user, 'form_login', 'other_firewall', [(new RememberMeBadge())->enable()]);
+
+            // ... and also add passport attributes
+            $security->login($user, 'form_login', 'other_firewall', [(new RememberMeBadge())->enable()], ['referer' => 'https://oauth.example.com']);
 
             // use the redirection logic applied to regular login
             $redirectResponse = $security->login($user);
@@ -1801,13 +1774,11 @@ You can log in a user programmatically using the ``login()`` method of the
         }
     }
 
-.. versionadded:: 6.3
+.. versionadded:: 7.2
 
-    The feature to use a custom redirection logic was introduced in Symfony 6.3.
-
-.. versionadded:: 6.4
-
-    The feature to add badges was introduced in Symfony 6.4.
+    The support for passport attributes in the
+    :method:`Symfony\\Bundle\\SecurityBundle\\Security::login` method was
+    introduced in Symfony 7.2.
 
 .. _security-logging-out:
 
@@ -1917,24 +1888,8 @@ you have imported the logout route loader in your routes:
             $routes->import('security.route_loader.logout', 'service');
         };
 
-.. versionadded:: 6.4
-
-    The :class:`Symfony\\Bundle\\SecurityBundle\\Routing\\LogoutRouteLoader` was
-    introduced in Symfony 6.4.
-
 Logout programmatically
 ~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 6.2
-
-    The :class:`Symfony\Bundle\SecurityBundle\Security <Symfony\\Bundle\\SecurityBundle\\Security>`
-    class was introduced in Symfony 6.2. Prior to 6.2, it was called
-    ``Symfony\Component\Security\Core\Security``.
-
-.. versionadded:: 6.2
-
-    The :method:`Symfony\\Bundle\\SecurityBundle\\Security::logout`
-    method was introduced in Symfony 6.2.
 
 You can logout user programmatically using the ``logout()`` method of the
 :class:`Symfony\\Bundle\\SecurityBundle\\Security` helper::
@@ -2168,12 +2123,6 @@ If you need to get the logged in user from a service, use the
             // ...
         }
     }
-
-.. versionadded:: 6.2
-
-    The :class:`Symfony\\Bundle\\SecurityBundle\\Security` class
-    was introduced in Symfony 6.2. In previous Symfony versions this class was
-    defined in ``Symfony\Component\Security\Core\Security``.
 
 Fetch the User in a Template
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2574,15 +2523,6 @@ that is thrown with the ``exceptionCode`` argument::
         // ...
     }
 
-.. versionadded:: 6.2
-
-    The ``#[IsGranted]`` attribute was introduced in Symfony 6.2.
-
-.. versionadded:: 6.3
-
-    The ``exceptionCode`` argument of the ``#[IsGranted]`` attribute was
-    introduced in Symfony 6.3.
-
 .. _security-template:
 
 Access Control in Templates
@@ -2598,6 +2538,17 @@ the built-in ``is_granted()`` helper function in any Twig template:
     {% endif %}
 
 .. _security-isgranted:
+
+Similarly, if you want to check if a specific user has a certain role, you can use
+the built-in ``is_granted_for_user()`` helper function:
+
+.. code-block:: html+twig
+
+    {% if is_granted_for_user(user, 'ROLE_ADMIN') %}
+        <a href="...">Delete</a>
+    {% endif %}
+
+.. _security-isgrantedforuser:
 
 Securing other Services
 .......................
@@ -2634,6 +2585,19 @@ want to include extra details only for users that have a ``ROLE_SALES_ADMIN`` ro
 
           // ...
       }
+
+
+.. tip::
+
+    The ``isGranted()`` method checks authorization for the currently logged-in user.
+    If you need to check authorization for a different user or when the user session
+    is unavailable (e.g., in a CLI context such as a message queue or cron job), you
+    can use the ``isGrantedForUser()`` method to explicitly set the target user.
+
+    .. versionadded:: 7.3
+
+        The :method:`Symfony\\Bundle\\SecurityBundle\\Security::isGrantedForUser`
+        method was introduced in Symfony 7.3.
 
 If you're using the :ref:`default services.yaml configuration <service-container-services-load-example>`,
 Symfony will automatically pass the ``security.helper`` to your service
@@ -2730,13 +2694,14 @@ anonymous users access by checking if there is no user set on the token::
     // ...
     use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
     use Symfony\Component\Security\Core\Authentication\User\UserInterface;
+    use Symfony\Component\Security\Core\Authorization\Voter\Vote;
     use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
     class PostVoter extends Voter
     {
         // ...
 
-        protected function voteOnAttribute(string $attribute, $subject, TokenInterface $token): bool
+        protected function voteOnAttribute(string $attribute, $subject, TokenInterface $token, ?Vote $vote = null): bool
         {
             // ...
 
@@ -2747,6 +2712,11 @@ anonymous users access by checking if there is no user set on the token::
             }
         }
     }
+
+.. versionadded:: 7.3
+    
+    The ``$vote`` argument of the ``voteOnAttribute()`` method was introduced
+    in Symfony 7.3.
 
 Setting Individual User Permissions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2798,15 +2768,6 @@ like this:
   :doc:`impersonating </security/impersonating_user>` another user in this
   session, this attribute will match.
 
-.. note::
-
-    All logged in users also have an attribute called ``IS_AUTHENTICATED_REMEMBERED``,
-    even if the application doesn't use the Remember Me feature. This attribute
-    exists for backward-compatibility reasons with Symfony versions prior to 6.4.
-
-    This attribute behaves the same as ``IS_AUTHENTICATED``. That's why in modern
-    Symfony applications it's recommended to no longer use ``IS_AUTHENTICATED_REMEMBERED``.
-
 .. _user_session_refresh:
 
 Understanding how Users are Refreshed from the Session
@@ -2824,7 +2785,35 @@ object) are "compared" to see if they are "equal". By default, the core
 your user will be logged out. This is a security measure to make sure that malicious
 users can be de-authenticated if core user data changes.
 
-However, in some cases, this process can cause unexpected authentication problems.
+Storing the (plain or hashed) password in the session can be a security risk.
+To mitigate this, implement the ``__serialize()`` magic method in your user class
+to exclude or transform the password before storing the serialized user object
+in the session.
+
+Two strategies are supported:
+
+#. Remove the password completely. After unserialization, ``getPassword()`` returns
+   ``null`` and Symfony refreshes the user without checking the password. Use this
+   only if you store plaintext passwords (not recommended).
+#. Hash the password using the ``crc32c`` algorithm. Symfony will hash the password
+   of the refreshed user and compare it to the session value. This approach avoids
+   storing the real hash and lets you invalidate sessions on password change.
+
+   Example (assuming the password is stored in a private property called ``password``)::
+
+       public function __serialize(): array
+       {
+           $data = (array) $this;
+           $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
+
+           return $data;
+       }
+
+.. versionadded:: 7.3
+
+    Support for hashing passwords with ``crc32c`` in session serialization was
+    introduced in Symfony 7.3.
+
 If you're having problems authenticating, it could be that you *are* authenticating
 successfully, but you immediately lose authentication after the first redirect.
 
@@ -3033,5 +3022,4 @@ Authorization (Denying Access)
 .. _`HTTP Basic authentication`: https://en.wikipedia.org/wiki/Basic_access_authentication
 .. _`Login CSRF attacks`: https://en.wikipedia.org/wiki/Cross-site_request_forgery#Forging_login_requests
 .. _`PHP date relative formats`: https://www.php.net/manual/en/datetime.formats.php#datetime.formats.relative
-.. _`SensitiveParameter PHP attribute`: https://www.php.net/manual/en/class.sensitiveparameter.php
 .. _`Oauth2-client`: https://github.com/thephpleague/oauth2-client

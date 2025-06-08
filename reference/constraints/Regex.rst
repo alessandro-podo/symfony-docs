@@ -71,9 +71,9 @@ more word characters at the beginning of your string:
 
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
-                $metadata->addPropertyConstraint('description', new Assert\Regex([
-                    'pattern' => '/^\w+/',
-                ]));
+                $metadata->addPropertyConstraint('description', new Assert\Regex(
+                    pattern: '/^\w+/',
+                ));
             }
         }
 
@@ -145,11 +145,11 @@ it a custom message:
 
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
-                $metadata->addPropertyConstraint('firstName', new Assert\Regex([
-                    'pattern' => '/\d/',
-                    'match' => false,
-                    'message' => 'Your name cannot contain a number',
-                ]));
+                $metadata->addPropertyConstraint('firstName', new Assert\Regex(
+                    pattern: '/\d/',
+                    match: false,
+                    message: 'Your name cannot contain a number',
+                ));
             }
         }
 
@@ -236,10 +236,10 @@ need to specify the HTML5 compatible pattern in the ``htmlPattern`` option:
 
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
-                $metadata->addPropertyConstraint('name', new Assert\Regex([
-                    'pattern' => '/^[a-z]+$/i',
-                    'htmlPattern' => '[a-zA-Z]+',
-                ]));
+                $metadata->addPropertyConstraint('name', new Assert\Regex(
+                    pattern: '/^[a-z]+$/i',
+                    htmlPattern: '[a-zA-Z]+',
+                ));
             }
         }
 
@@ -272,14 +272,10 @@ Parameter          Description
 ``{{ pattern }}``  The expected matching pattern
 =================  ==============================================================
 
-.. versionadded:: 6.3
-
-   The ``{{ pattern }}`` parameter was introduced in 6.3.
-
 ``pattern``
 ~~~~~~~~~~~
 
-**type**: ``string`` [:ref:`default option <validation-default-option>`]
+**type**: ``string``
 
 This required option is the regular expression pattern that the input will
 be matched against. By default, this validator will fail if the input string

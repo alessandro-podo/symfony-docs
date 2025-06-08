@@ -85,12 +85,12 @@ and ``50``, you might add the following:
 
             public static function loadValidatorMetadata(ClassMetadata $metadata): void
             {
-                $metadata->addPropertyConstraint('firstName', new Assert\Length([
-                    'min' => 2,
-                    'max' => 50,
-                    'minMessage' => 'Your first name must be at least {{ limit }} characters long',
-                    'maxMessage' => 'Your first name cannot be longer than {{ limit }} characters',
-                ]));
+                $metadata->addPropertyConstraint('firstName', new Assert\Length(
+                    min: 2,
+                    max: 50,
+                    minMessage: 'Your first name must be at least {{ limit }} characters long',
+                    maxMessage: 'Your first name cannot be longer than {{ limit }} characters',
+                ));
             }
         }
 
@@ -143,10 +143,6 @@ Can be one of the following constants of the
 * ``COUNT_GRAPHEMES``: Uses :phpfunction:`grapheme_strlen` counting the length of the string in
   graphemes, i.e. even emojis and ZWJ sequences of composed emojis count as 1 character.
 
-.. versionadded:: 6.3
-
-    The ``countUnit`` option was introduced in Symfony 6.3.
-
 ``exactly``
 ~~~~~~~~~~~
 
@@ -179,10 +175,6 @@ Parameter               Description
 ``{{ value_length }}``  The current value's length
 ======================  ============================================================
 
-.. versionadded:: 6.3
-
-    The `{{ value_length }}` parameter was introduced in Symfony 6.3.
-
 .. include:: /reference/constraints/_groups-option.rst.inc
 
 ``max``
@@ -212,10 +204,6 @@ Parameter               Description
 ``{{ value }}``         The current (invalid) value
 ``{{ value_length }}``  The current value's length
 ======================  ============================================================
-
-.. versionadded:: 6.3
-
-    The `{{ value_length }}` parameter was introduced in Symfony 6.3.
 
 ``min``
 ~~~~~~~
@@ -248,10 +236,6 @@ Parameter               Description
 ``{{ value }}``         The current (invalid) value
 ``{{ value_length }}``  The current value's length
 ======================  ============================================================
-
-.. versionadded:: 6.3
-
-    The `{{ value_length }}` parameter was introduced in Symfony 6.3.
 
 .. include:: /reference/constraints/_normalizer-option.rst.inc
 

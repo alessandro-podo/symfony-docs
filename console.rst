@@ -67,14 +67,6 @@ command, for instance:
 Console Completion
 ~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 6.1
-
-    Console completion for Fish was introduced in Symfony 6.1.
-
-.. versionadded:: 6.2
-
-    Console completion for Zsh was introduced in Symfony 6.2.
-
 If you are using the Bash, Zsh or Fish shell, you can install Symfony's
 completion script to get auto completion when typing commands in the
 terminal. All commands support name and option completion, and some can
@@ -167,13 +159,12 @@ You can optionally define a description, help message and the
     // ...
     class CreateUserCommand extends Command
     {
-        // the command description shown when running "php bin/console list"
-        protected static $defaultDescription = 'Creates a new user.';
-
         // ...
         protected function configure(): void
         {
             $this
+                // the command description shown when running "php bin/console list"
+                ->setDescription('Creates a new user.')
                 // the command help shown when running the command with the "--help" option
                 ->setHelp('This command allows you to create a user...')
             ;
@@ -182,20 +173,15 @@ You can optionally define a description, help message and the
 
 .. tip::
 
-    Defining the ``$defaultDescription`` static property instead of using the
-    ``setDescription()`` method allows to get the command description without
+    Using the ``#[AsCommand]`` attribute to define a description instead of
+    using the ``setDescription()`` method allows to get the command description without
     instantiating its class. This makes the ``php bin/console list`` command run
     much faster.
 
     If you want to always run the ``list`` command fast, add the ``--short`` option
     to it (``php bin/console list --short``). This will avoid instantiating command
     classes, but it won't show any description for commands that use the
-    ``setDescription()`` method instead of the static property.
-
-.. deprecated:: 6.1
-
-    The static property ``$defaultDescription`` was deprecated in Symfony 6.1.
-    Instead, use the ``#[AsCommand]`` attribute to define the optional command
+    ``setDescription()`` method instead of the attribute to define the command
     description.
 
 The ``configure()`` method is called automatically at the end of the command
@@ -243,8 +229,6 @@ You can register the command by adding the ``AsCommand`` attribute to it::
     use Symfony\Component\Console\Attribute\AsCommand;
     use Symfony\Component\Console\Command\Command;
 
-    // the "name" and "description" arguments of AsCommand replace the
-    // static $defaultName and $defaultDescription properties
     #[AsCommand(
         name: 'app:create-user',
         description: 'Creates a new user.',
@@ -260,11 +244,6 @@ If you can't use PHP attributes, register the command as a service and
 :doc:`tag it </service_container/tags>` with the ``console.command`` tag. If you're using the
 :ref:`default services.yaml configuration <service-container-services-load-example>`,
 this is already done for you, thanks to :ref:`autoconfiguration <services-autoconfigure>`.
-
-.. deprecated:: 6.1
-
-    The static property ``$defaultName`` was deprecated in Symfony 6.1.
-    Define your command name with the ``#[AsCommand]`` attribute instead.
 
 Running the Command
 ~~~~~~~~~~~~~~~~~~~
@@ -381,10 +360,6 @@ method, which returns an instance of
 .. note::
 
     A new line is appended automatically when displaying information in a section.
-
-.. versionadded:: 6.2
-
-    The feature to limit the height of a console section was introduced in Symfony 6.2.
 
 Output sections let you manipulate the Console output in advanced ways, such as
 :ref:`displaying multiple progress bars <console-multiple-progress-bars>` which
@@ -607,11 +582,6 @@ even the color mode being used. You have access to such information thanks to th
     // changes the color mode
     $colorMode = $terminal->setColorMode(AnsiColorMode::Ansi24);
 
-.. versionadded:: 6.2
-
-    The support for setting and getting the current color mode was introduced
-    in Symfony 6.2.
-
 Logging Command Errors
 ----------------------
 
@@ -655,10 +625,6 @@ profile is accessible through the web page of the profiler.
     component, add the ``--no-reset`` option to the command or you won't get any
     profile. Moreover, consider using the ``--limit`` option to only process a few
     messages to make the profile more readable in the profiler.
-
-.. versionadded:: 6.4
-
-    The ``--profile`` option was introduced in Symfony 6.4.
 
 Learn More
 ----------

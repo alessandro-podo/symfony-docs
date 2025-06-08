@@ -403,8 +403,13 @@ Store                                                       Scope   Blocking  Ex
 
 .. tip::
 
-    A special ``InMemoryStore`` is available for saving locks in memory during
-    a process, and can be useful for testing.
+    Symfony includes two other special stores that are mostly useful for testing:
+    ``InMemoryStore``, which saves locks in memory during a process, and ``NullStore``,
+    which doesn't persist anything.
+
+.. versionadded:: 7.2
+
+    The :class:`Symfony\\Component\\Lock\\Store\\NullStore` was introduced in Symfony 7.2.
 
 .. _lock-store-flock:
 
@@ -473,21 +478,15 @@ avoid stalled locks::
 
 The ``MongoDbStore`` takes the following ``$options`` (depending on the first parameter type):
 
-==============  ================================================================================================
-Option          Description
-==============  ================================================================================================
-gcProbability   Should a TTL Index be created expressed as a probability from 0.0 to 1.0 (Defaults to ``0.001``)
-gcProbablity    Same as ``gcProbability``, see the deprecation note below
-database        The name of the database
-collection      The name of the collection
-uriOptions      Array of URI options for `MongoDBClient::__construct`_
-driverOptions   Array of driver options for `MongoDBClient::__construct`_
-=============   ================================================================================================
-
-.. deprecated:: 6.3
-
-    The ``gcProbablity`` option (notice the typo in its name) is deprecated since
-    Symfony 6.3, use the ``gcProbability`` option instead.
+=============  ================================================================================================
+Option         Description
+=============  ================================================================================================
+gcProbability  Should a TTL Index be created expressed as a probability from 0.0 to 1.0 (Defaults to ``0.001``)
+database       The name of the database
+collection     The name of the collection
+uriOptions     Array of URI options for `MongoDBClient::__construct`_
+driverOptions  Array of driver options for `MongoDBClient::__construct`_
+=============  ================================================================================================
 
 When the first parameter is a:
 
@@ -561,11 +560,6 @@ the command:
 
     $ php bin/console make:migration
 
-.. versionadded:: 6.3
-
-    The automatic table generation when running the ``make:migration`` command
-    was introduced in Symfony 6.3.
-
 If you prefer to create the table yourself and it has not already been created, you can
 create this table explicitly by calling the
 :method:`Symfony\\Component\\Lock\\Store\\DoctrineDbalStore::createTable` method.
@@ -617,14 +611,10 @@ store locks and does not expire.
 RedisStore
 ~~~~~~~~~~
 
-.. versionadded:: 6.3
-
-    ``\Relay\Relay`` support was introduced in Symfony 6.3.
-
 The RedisStore saves locks on a Redis server, it requires a Redis connection
-implementing the ``\Redis``, ``\RedisArray``, ``\RedisCluster``, ``\Relay\Relay`` or
-``\Predis`` classes. This store does not support blocking, and expects a TTL to
-avoid stalled locks::
+implementing the ``\Redis``, ``\RedisArray``, ``\RedisCluster``, ``\Relay\Relay``,
+``\Relay\Cluster`` or ``\Predis`` classes. This store does not support blocking,
+and expects a TTL to avoid stalled locks::
 
     use Symfony\Component\Lock\Store\RedisStore;
 
@@ -632,6 +622,10 @@ avoid stalled locks::
     $redis->connect('localhost');
 
     $store = new RedisStore($redis);
+
+.. versionadded:: 7.3
+
+    Support for ``Relay\Cluster`` was introduced in Symfony 7.3.
 
 .. _lock-store-semaphore:
 

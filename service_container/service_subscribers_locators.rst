@@ -110,17 +110,35 @@ in the service subscriber::
     that you have :ref:`autoconfigure <services-autoconfigure>` enabled. You
     can also manually add the ``container.service_subscriber`` tag.
 
-The injected service is an instance of :class:`Symfony\\Component\\DependencyInjection\\ServiceLocator`
-which implements both the PSR-11 ``ContainerInterface`` and :class:`Symfony\\Contracts\\Service\\ServiceProviderInterface`.
-It is also a callable and a countable::
+A service locator is a `PSR-11 container`_ that contains a set of services,
+but only instantiates them when they are actually used. Consider the following code::
+
+    // ...
+    $handler = $this->locator->get($commandClass);
+
+    return $handler->handle($command);
+
+In this example, the ``$handler`` service is only instantiated when the
+``$this->locator->get($commandClass)`` method is called.
+
+You can also type-hint the service locator argument with
+:class:`Symfony\\Contracts\\Service\\ServiceCollectionInterface` instead of
+``Psr\Container\ContainerInterface``. By doing so, you'll be able to
+count and iterate over the services of the locator::
 
     // ...
     $numberOfHandlers = count($this->locator);
     $nameOfHandlers = array_keys($this->locator->getProvidedServices());
-    // ...
-    $handler = ($this->locator)($commandClass);
 
-    return $handler->handle($command);
+    // you can iterate through all services of the locator
+    foreach ($this->locator as $serviceId => $service) {
+        // do something with the service, the service id or both
+    }
+
+.. versionadded:: 7.1
+
+    The :class:`Symfony\\Contracts\\Service\\ServiceCollectionInterface` was
+    introduced in Symfony 7.1.
 
 Including Services
 ------------------
@@ -247,17 +265,13 @@ service type to a service.
 Add Dependency Injection Attributes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 6.2
-
-    The ability to add attributes was introduced in Symfony 6.2.
-
 As an alternate to aliasing services in your configuration, you can also configure
 the following dependency injection attributes in the ``getSubscribedServices()``
 method directly:
 
 * :class:`Symfony\\Component\\DependencyInjection\\Attribute\\Autowire`
-* :class:`Symfony\\Component\\DependencyInjection\\Attribute\\TaggedIterator`
-* :class:`Symfony\\Component\\DependencyInjection\\Attribute\\TaggedLocator`
+* :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireIterator`
+* :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireLocator`
 * :class:`Symfony\\Component\\DependencyInjection\\Attribute\\Target`
 * :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireDecorated`
 
@@ -268,8 +282,8 @@ This is done by having ``getSubscribedServices()`` return an array of
     use Psr\Container\ContainerInterface;
     use Psr\Log\LoggerInterface;
     use Symfony\Component\DependencyInjection\Attribute\Autowire;
-    use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
-    use Symfony\Component\DependencyInjection\Attribute\TaggedLocator;
+    use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
+    use Symfony\Component\DependencyInjection\Attribute\AutowireLocator;
     use Symfony\Component\DependencyInjection\Attribute\Target;
     use Symfony\Contracts\Service\Attribute\SubscribedService;
 
@@ -285,13 +299,21 @@ This is done by having ``getSubscribedServices()`` return an array of
             // Target
             new SubscribedService('event.logger', LoggerInterface::class, attributes: new Target('eventLogger')),
 
-            // TaggedIterator
-            new SubscribedService('loggers', 'iterable', attributes: new TaggedIterator('logger.tag')),
+            // AutowireIterator
+            new SubscribedService('loggers', 'iterable', attributes: new AutowireIterator('logger.tag')),
 
-            // TaggedLocator
-            new SubscribedService('handlers', ContainerInterface::class, attributes: new TaggedLocator('handler.tag')),
+            // AutowireLocator
+            new SubscribedService('handlers', ContainerInterface::class, attributes: new AutowireLocator('handler.tag')),
         ];
     }
+
+.. deprecated:: 7.1
+
+    The :class:`Symfony\\Component\\DependencyInjection\\Attribute\\TaggedIterator`
+    and :class:`Symfony\\Component\\DependencyInjection\\Attribute\\TaggedLocator`
+    attributes were deprecated in Symfony 7.1 in favor of
+    :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireIterator`
+    and :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireLocator`.
 
 .. note::
 
@@ -375,12 +397,6 @@ attribute::
         }
     }
 
-.. versionadded:: 6.4
-
-    The
-    :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireLocator`
-    attribute was introduced in Symfony 6.4.
-
 .. _service-locator_autowire-iterator:
 
 The AutowireIterator Attribute
@@ -419,12 +435,6 @@ For example, to collect all handlers for different command types, use the
         }
     }
 
-.. versionadded:: 6.4
-
-    The
-    :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireIterator`
-    attribute was introduced in Symfony 6.4.
-
 .. _service-subscribers-locators_defining-service-locator:
 
 Defining a Service Locator
@@ -460,13 +470,13 @@ or directly via PHP attributes:
         namespace App;
 
         use Psr\Container\ContainerInterface;
-        use Symfony\Component\DependencyInjection\Attribute\TaggedLocator;
+        use Symfony\Component\DependencyInjection\Attribute\AutowireLocator;
 
         class CommandBus
         {
             public function __construct(
                 // creates a service locator with all the services tagged with 'app.handler'
-                #[TaggedLocator('app.handler')]
+                #[AutowireLocator('app.handler')]
                 private ContainerInterface $locator,
             ) {
             }
@@ -702,12 +712,12 @@ to index the services:
         namespace App;
 
         use Psr\Container\ContainerInterface;
-        use Symfony\Component\DependencyInjection\Attribute\TaggedLocator;
+        use Symfony\Component\DependencyInjection\Attribute\AutowireLocator;
 
         class CommandBus
         {
             public function __construct(
-                #[TaggedLocator('app.handler', indexAttribute: 'key')]
+                #[AutowireLocator('app.handler', indexAttribute: 'key')]
                 private ContainerInterface $locator,
             ) {
             }
@@ -817,12 +827,12 @@ get the value used to index the services:
         namespace App;
 
         use Psr\Container\ContainerInterface;
-        use Symfony\Component\DependencyInjection\Attribute\TaggedLocator;
+        use Symfony\Component\DependencyInjection\Attribute\AutowireLocator;
 
         class CommandBus
         {
             public function __construct(
-                #[TaggedLocator('app.handler', defaultIndexMethod: 'getLocatorKey')]
+                #[AutowireLocator('app.handler', defaultIndexMethod: 'getLocatorKey')]
                 private ContainerInterface $locator,
             ) {
             }
@@ -887,7 +897,7 @@ the following order:
 Service Subscriber Trait
 ------------------------
 
-The :class:`Symfony\\Contracts\\Service\\ServiceSubscriberTrait` provides an
+The :class:`Symfony\\Contracts\\Service\\ServiceMethodsSubscriberTrait` provides an
 implementation for :class:`Symfony\\Contracts\\Service\\ServiceSubscriberInterface`
 that looks through all methods in your class that are marked with the
 :class:`Symfony\\Contracts\\Service\\Attribute\\SubscribedService` attribute. It
@@ -901,12 +911,12 @@ services based on type-hinted helper methods::
     use Psr\Log\LoggerInterface;
     use Symfony\Component\Routing\RouterInterface;
     use Symfony\Contracts\Service\Attribute\SubscribedService;
+    use Symfony\Contracts\Service\ServiceMethodsSubscriberTrait;
     use Symfony\Contracts\Service\ServiceSubscriberInterface;
-    use Symfony\Contracts\Service\ServiceSubscriberTrait;
 
     class MyService implements ServiceSubscriberInterface
     {
-        use ServiceSubscriberTrait;
+        use ServiceMethodsSubscriberTrait;
 
         public function doSomething(): void
         {
@@ -926,6 +936,11 @@ services based on type-hinted helper methods::
             return $this->container->get(__METHOD__);
         }
     }
+
+.. versionadded:: 7.1
+
+    The ``ServiceMethodsSubscriberTrait`` was introduced in Symfony 7.1.
+    In previous Symfony versions it was called ``ServiceSubscriberTrait``.
 
 This  allows you to create helper traits like RouterAware, LoggerAware, etc...
 and compose your services with them::
@@ -963,12 +978,12 @@ and compose your services with them::
     // src/Service/MyService.php
     namespace App\Service;
 
+    use Symfony\Contracts\Service\ServiceMethodsSubscriberTrait;
     use Symfony\Contracts\Service\ServiceSubscriberInterface;
-    use Symfony\Contracts\Service\ServiceSubscriberTrait;
 
     class MyService implements ServiceSubscriberInterface
     {
-        use ServiceSubscriberTrait, LoggerAware, RouterAware;
+        use ServiceMethodsSubscriberTrait, LoggerAware, RouterAware;
 
         public function doSomething(): void
         {
@@ -986,16 +1001,12 @@ and compose your services with them::
 ``SubscribedService`` Attributes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 6.2
-
-    The ability to add attributes was introduced in Symfony 6.2.
-
 You can use the ``attributes`` argument of ``SubscribedService`` to add any
 of the following dependency injection attributes:
 
 * :class:`Symfony\\Component\\DependencyInjection\\Attribute\\Autowire`
-* :class:`Symfony\\Component\\DependencyInjection\\Attribute\\TaggedIterator`
-* :class:`Symfony\\Component\\DependencyInjection\\Attribute\\TaggedLocator`
+* :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireIterator`
+* :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireLocator`
 * :class:`Symfony\\Component\\DependencyInjection\\Attribute\\Target`
 * :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireDecorated`
 
@@ -1009,12 +1020,12 @@ Here's an example::
     use Symfony\Component\DependencyInjection\Attribute\Target;
     use Symfony\Component\Routing\RouterInterface;
     use Symfony\Contracts\Service\Attribute\SubscribedService;
+    use Symfony\Contracts\Service\ServiceMethodsSubscriberTrait;
     use Symfony\Contracts\Service\ServiceSubscriberInterface;
-    use Symfony\Contracts\Service\ServiceSubscriberTrait;
 
     class MyService implements ServiceSubscriberInterface
     {
-        use ServiceSubscriberTrait;
+        use ServiceMethodsSubscriberTrait;
 
         public function doSomething(): void
         {
@@ -1097,3 +1108,4 @@ Another alternative is to mock it using ``PHPUnit``::
     // ...
 
 .. _`Command pattern`: https://en.wikipedia.org/wiki/Command_pattern
+.. _`PSR-11 container`: https://www.php-fig.org/psr/psr-11/

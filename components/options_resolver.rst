@@ -305,12 +305,20 @@ correctly. To validate the types of the options, call
 
             // specify multiple allowed types
             $resolver->setAllowedTypes('port', ['null', 'int']);
+            // if you prefer, you can also use the following equivalent syntax
+            $resolver->setAllowedTypes('port', 'int|null');
 
             // check all items in an array recursively for a type
             $resolver->setAllowedTypes('dates', 'DateTime[]');
             $resolver->setAllowedTypes('ports', 'int[]');
+            // the following syntax means "an array of integers or an array of strings"
+            $resolver->setAllowedTypes('endpoints', '(int|string)[]');
         }
     }
+
+.. versionadded:: 7.3
+
+    Defining type unions with the ``|`` syntax was introduced in Symfony 7.3.
 
 You can pass any type for which an ``is_<type>()`` function is defined in PHP.
 You may also pass fully qualified class or interface names (which is checked
@@ -386,7 +394,7 @@ returns ``true`` for acceptable values and ``false`` for invalid values::
 
         // ...
         $resolver->setAllowedValues('transport', Validation::createIsValidCallable(
-            new Length(['min' => 10 ])
+            new Length(min: 10)
         ));
 
 In sub-classes, you can use :method:`Symfony\\Component\\OptionsResolver\\OptionsResolver::addAllowedValues`
@@ -654,7 +662,7 @@ default value::
 
         public function configureOptions(OptionsResolver $resolver): void
         {
-            $resolver->setDefault('spool', function (OptionsResolver $spoolResolver): void {
+            $resolver->setOptions('spool', function (OptionsResolver $spoolResolver): void {
                 $spoolResolver->setDefaults([
                     'type' => 'file',
                     'path' => '/path/to/spool',
@@ -678,6 +686,16 @@ default value::
         ],
     ]);
 
+.. deprecated:: 7.3
+
+    Defining nested options via :method:`Symfony\\Component\\OptionsResolver\\OptionsResolver::setDefault`
+    is deprecated since Symfony 7.3. Use the :method:`Symfony\\Component\\OptionsResolver\\OptionsResolver::setOptions`
+    method instead, which also allows defining default values for prototyped options.
+
+.. versionadded:: 7.3
+
+    The ``setOptions()`` method was introduced in Symfony 7.3.
+
 Nested options also support required options, validation (type, value) and
 normalization of their values. If the default value of a nested option depends
 on another option defined in the parent level, add a second ``Options`` argument
@@ -690,7 +708,7 @@ to the closure to access to them::
         public function configureOptions(OptionsResolver $resolver): void
         {
             $resolver->setDefault('sandbox', false);
-            $resolver->setDefault('spool', function (OptionsResolver $spoolResolver, Options $parent): void {
+            $resolver->setOptions('spool', function (OptionsResolver $spoolResolver, Options $parent): void {
                 $spoolResolver->setDefaults([
                     'type' => $parent['sandbox'] ? 'memory' : 'file',
                     // ...
@@ -713,13 +731,13 @@ In same way, parent options can access to the nested options as normal arrays::
 
         public function configureOptions(OptionsResolver $resolver): void
         {
-            $resolver->setDefault('spool', function (OptionsResolver $spoolResolver): void {
+            $resolver->setOptions('spool', function (OptionsResolver $spoolResolver): void {
                 $spoolResolver->setDefaults([
                     'type' => 'file',
                     // ...
                 ]);
             });
-            $resolver->setDefault('profiling', function (Options $options): void {
+            $resolver->setOptions('profiling', function (Options $options): void {
                 return 'file' === $options['spool']['type'];
             });
         }
@@ -740,7 +758,7 @@ with ``host``, ``database``, ``user`` and ``password`` each.
 
 The best way to implement this is to define the ``connections`` option as prototype::
 
-    $resolver->setDefault('connections', function (OptionsResolver $connResolver): void {
+    $resolver->setOptions('connections', function (OptionsResolver $connResolver): void {
         $connResolver
             ->setPrototype(true)
             ->setRequired(['host', 'database'])
@@ -868,10 +886,6 @@ if an unknown option is passed. You can ignore not defined options by using the
         'hostname' => 'acme/package',
         'version'  => '1.2.3'
     ]);
-
-.. versionadded:: 6.3
-
-    The ``ignoreUndefined()`` method was introduced in Symfony 6.3.
 
 Chaining Option Configurations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

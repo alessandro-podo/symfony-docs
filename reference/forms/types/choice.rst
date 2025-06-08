@@ -11,8 +11,6 @@ To use this field, you must specify *either* ``choices`` or ``choice_loader`` op
 +---------------------------+----------------------------------------------------------------------+
 | Default invalid message   | The selected choice is invalid.                                      |
 +---------------------------+----------------------------------------------------------------------+
-| Legacy invalid message    | The value {{ value }} is not valid.                                  |
-+---------------------------+----------------------------------------------------------------------+
 | Parent type               | :doc:`FormType </reference/forms/types/form>`                        |
 +---------------------------+----------------------------------------------------------------------+
 | Class                     | :class:`Symfony\\Component\\Form\\Extension\\Core\\Type\\ChoiceType` |
@@ -180,6 +178,8 @@ correct types will be assigned to the model.
 
 .. include:: /reference/forms/types/options/choice_loader.rst.inc
 
+.. include:: /reference/forms/types/options/choice_lazy.rst.inc
+
 .. include:: /reference/forms/types/options/choice_name.rst.inc
 
 .. include:: /reference/forms/types/options/choice_translation_domain_enabled.rst.inc
@@ -201,6 +201,32 @@ correct types will be assigned to the model.
 .. include:: /reference/forms/types/options/placeholder_attr.rst.inc
 
 .. include:: /reference/forms/types/options/preferred_choices.rst.inc
+
+``separator``
+~~~~~~~~~~~~~
+
+**type**: ``string`` **default**: ``-------------------``
+
+This option allows you to customize the visual separator shown after the preferred
+choices. You can use HTML elements like ``<hr>`` to display a more modern separator,
+but you'll also need to set the `separator_html`_ option to ``true``.
+
+.. versionadded:: 7.1
+
+    The ``separator`` option was introduced in Symfony 7.1.
+
+``separator_html``
+~~~~~~~~~~~~~~~~~~
+
+**type**: ``boolean`` **default**: ``false``
+
+If this option is true, the `separator`_ option will be displayed as HTML instead
+of text. This is useful when using HTML elements (e.g. ``<hr>``) as a more modern
+visual separator.
+
+.. versionadded:: 7.1
+
+    The ``separator_html`` option was introduced in Symfony 7.1.
 
 Overridden Options
 ------------------

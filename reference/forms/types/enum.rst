@@ -10,8 +10,6 @@ field and defines the same options.
 +---------------------------+----------------------------------------------------------------------+
 | Default invalid message   | The selected choice is invalid.                                      |
 +---------------------------+----------------------------------------------------------------------+
-| Legacy invalid message    | The value {{ value }} is not valid.                                  |
-+---------------------------+----------------------------------------------------------------------+
 | Parent type               | :doc:`ChoiceType </reference/forms/types/choice>`                    |
 +---------------------------+----------------------------------------------------------------------+
 | Class                     | :class:`Symfony\\Component\\Form\\Extension\\Core\\Type\\EnumType`   |
@@ -79,10 +77,6 @@ implement ``TranslatableInterface`` to translate or display custom labels::
             };
         }
     }
-
-.. versionadded:: 6.4
-
-    Support for ``TranslatableInterface`` was introduced in Symfony 6.4.
 
 Field Options
 -------------

@@ -1,10 +1,6 @@
 Webhook
 =======
 
-.. versionadded:: 6.3
-
-    The Webhook component was introduced in Symfony 6.3.
-
 The Webhook component is used to respond to remote webhooks to trigger actions
 in your application. This document focuses on using webhooks to listen to remote
 events in other Symfony components.
@@ -19,24 +15,45 @@ Installation
 Usage in Combination with the Mailer Component
 ----------------------------------------------
 
+.. admonition:: Screencast
+    :class: screencast
+
+    Like video tutorials? Check out the `Webhook Component for Email Events screencast`_.
+
 When using a third-party mailer provider, you can use the Webhook component to
 receive webhook calls from this provider.
 
 Currently, the following third-party mailer providers support webhooks:
 
-============== ==========================================
+============== ============================================
 Mailer Service Parser service name
-============== ==========================================
+============== ============================================
+AhaSend        ``mailer.webhook.request_parser.ahasend``
 Brevo          ``mailer.webhook.request_parser.brevo``
+Mandrill       ``mailer.webhook.request_parser.mailchimp``
+MailerSend     ``mailer.webhook.request_parser.mailersend``
 Mailgun        ``mailer.webhook.request_parser.mailgun``
 Mailjet        ``mailer.webhook.request_parser.mailjet``
+Mailomat       ``mailer.webhook.request_parser.mailomat``
+Mailtrap       ``mailer.webhook.request_parser.mailtrap``
 Postmark       ``mailer.webhook.request_parser.postmark``
+Resend         ``mailer.webhook.request_parser.resend``
 Sendgrid       ``mailer.webhook.request_parser.sendgrid``
-============== ==========================================
+Sweego         ``mailer.webhook.request_parser.sweego``
+============== ============================================
 
-.. versionadded:: 6.4
+.. versionadded:: 7.1
 
-    The support for Brevo, Mailjet and Sendgrid was introduced in Symfony 6.4.
+    The support for ``Resend`` and ``MailerSend`` were introduced in Symfony 7.1.
+
+.. versionadded:: 7.2
+
+    The ``Mandrill``, ``Mailomat``, ``Mailtrap``, and ``Sweego`` integrations were introduced in
+    Symfony 7.2.
+
+.. versionadded:: 7.3
+
+    The ``AhaSend`` integration was introduced in Symfony 7.3.
 
 .. note::
 
@@ -159,6 +176,8 @@ Currently, the following third-party SMS transports support webhooks:
 SMS service  Parser service name
 ============ ==========================================
 Twilio       ``notifier.webhook.request_parser.twilio``
+Smsbox       ``notifier.webhook.request_parser.smsbox``
+Sweego       ``notifier.webhook.request_parser.sweego``
 Vonage       ``notifier.webhook.request_parser.vonage``
 ============ ==========================================
 
@@ -199,3 +218,4 @@ Creating a Custom Webhook
     Webhook.
 
 .. _`MakerBundle`: https://symfony.com/doc/current/bundles/SymfonyMakerBundle/index.html
+.. _`Webhook Component for Email Events screencast`: https://symfonycasts.com/screencast/mailtrap/email-event-webhook

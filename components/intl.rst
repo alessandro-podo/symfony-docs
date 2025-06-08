@@ -28,7 +28,6 @@ This component provides the following ICU data:
 * `Locales`_
 * `Currencies`_
 * `Timezones`_
-* `Emoji Transliteration`_
 
 Language and Script Names
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -202,10 +201,6 @@ numeric country codes::
 
     $exists = Countries::numericCodeExists('250');
     // => true
-
-.. versionadded:: 6.4
-
-    The support for numeric country codes was introduced in Symfony 6.4.
 
 Locales
 ~~~~~~~
@@ -390,60 +385,21 @@ to catching the exception, you can also check if a given timezone ID is valid::
 Emoji Transliteration
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 6.2
+Symfony provides utilities to translate emojis into their textual representation
+in all languages. Read the documentation about :ref:`emoji transliteration <emoji-transliteration>`
+to learn more about this feature.
 
-    The Emoji transliteration feature was introduced in Symfony 6.2.
+Disk Space
+----------
 
-The ``EmojiTransliterator`` class provides a utility to translate emojis into
-their textual representation in all languages based on the `Unicode CLDR dataset`_::
-
-    use Symfony\Component\Intl\Transliterator\EmojiTransliterator;
-
-    // describe emojis in English
-    $transliterator = EmojiTransliterator::create('en');
-    $transliterator->transliterate('Menus with 🍕 or 🍝');
-    // => 'Menus with pizza or spaghetti'
-
-    // describe emojis in Ukrainian
-    $transliterator = EmojiTransliterator::create('uk');
-    $transliterator->transliterate('Menus with 🍕 or 🍝');
-    // => 'Menus with піца or спагеті'
-
-The ``EmojiTransliterator`` class also provides two extra catalogues: ``github``
-and ``slack`` that converts any emojis to the corresponding short code in those
-platforms::
-
-    use Symfony\Component\Intl\Transliterator\EmojiTransliterator;
-
-    // describe emojis in Slack short code
-    $transliterator = EmojiTransliterator::create('slack');
-    $transliterator->transliterate('Menus with 🥗 or 🧆');
-    // => 'Menus with :green_salad: or :falafel:'
-
-    // describe emojis in Github short code
-    $transliterator = EmojiTransliterator::create('github');
-    $transliterator->transliterate('Menus with 🥗 or 🧆');
-    // => 'Menus with :green_salad: or :falafel:'
-
-.. tip::
-
-    Combine this emoji transliterator with the :ref:`Symfony String slugger <string-slugger-emoji>`
-    to improve the slugs of contents that include emojis (e.g. for URLs).
-
-The data needed to store the transliteration of all emojis (~5,000) into all
-languages take a considerable disk space. If you need to save disk space (e.g.
-because you deploy to some service with tight size constraints), run this command
-(e.g. as an automated script after ``composer install``) to compress the internal
-Symfony emoji data files using the PHP ``zlib`` extension:
+If you need to save disk space (e.g. because you deploy to some service with tight size
+constraints), run this command (e.g. as an automated script after ``composer install``) to compress the
+internal Symfony Intl data files using the PHP ``zlib`` extension:
 
 .. code-block:: terminal
 
     # adjust the path to the 'compress' binary based on your application installation
     $ php ./vendor/symfony/intl/Resources/bin/compress
-
-.. versionadded:: 6.3
-
-    The ``compress`` binary was introduced in Symfony 6.3.
 
 Learn more
 ----------
@@ -467,4 +423,3 @@ Learn more
 .. _`daylight saving time (DST)`: https://en.wikipedia.org/wiki/Daylight_saving_time
 .. _`ISO 639-1 alpha-2`: https://en.wikipedia.org/wiki/ISO_639-1
 .. _`ISO 639-2 alpha-3 (2T)`: https://en.wikipedia.org/wiki/ISO_639-2
-.. _`Unicode CLDR dataset`: https://github.com/unicode-org/cldr

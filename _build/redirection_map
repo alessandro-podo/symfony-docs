@@ -529,7 +529,7 @@
 /serializer/normalizers /serializer#serializer-built-in-normalizers
 /logging/monolog_regex_based_excludes /logging/monolog_exclude_http_codes
 /security/named_encoders /security/named_hashers
-/components/inflector /components/string#inflector
+/components/inflector /string#inflector
 /security/experimental_authenticators /security
 /security/user_provider /security/user_providers
 /security/reset_password /security/passwords#reset-password
@@ -567,5 +567,10 @@
 /messenger/dispatch_after_current_bus /messenger#messenger-transactional-messages
 /messenger/multiple_buses /messenger#messenger-multiple-buses
 /frontend/encore/server-data /frontend/server-data
+/components/string /string
+/testing/http_authentication /testing#testing_logging_in_users
+/doctrine/registration_form /security#security-make-registration-form
+/form/form_dependencies /form/create_custom_field_type
+/doctrine/reverse_engineering /doctrine#doctrine-adding-mapping
 /components/serializer /serializer
 /serializer/custom_encoder /serializer/encoders#serializer-custom-encoder

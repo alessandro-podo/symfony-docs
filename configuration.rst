@@ -81,10 +81,6 @@ readable. These are the main advantages and disadvantages of each format:
     methods in the ``src/Kernel.php`` file to add support for the ``.xml`` file
     extension.
 
-    .. versionadded:: 6.1
-
-        The automatic loading of PHP configuration files was introduced in Symfony 6.1.
-
 Importing Configuration Files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -292,14 +288,6 @@ reusable configuration value. By convention, parameters are defined under the
             something@example.com
         </parameter>
 
-.. versionadded:: 6.2
-
-    Passing an enum case as a service parameter was introduced in Symfony 6.2.
-
-.. versionadded:: 6.3
-
-    The ``trim`` attribute was introduced in Symfony 6.3.
-
 Once defined, you can reference this parameter value from any other
 configuration file using a special syntax: wrap the parameter name in two ``%``
 (e.g. ``%app.admin_email%``):
@@ -394,9 +382,19 @@ a new ``locale`` parameter is added to the ``config/services.yaml`` file).
     They are useful when working with :doc:`Compiler Passes </service_container/compiler_passes>`
     to declare some temporary parameters that won't be available later in the application.
 
-.. versionadded:: 6.3
+Configuration parameters are usually validation-free, but you can ensure that
+essential parameters for your application's functionality are not empty::
 
-    Compile-time parameters were introduced in Symfony 6.3.
+    /** @var ContainerBuilder $container */
+    $container->parameterCannotBeEmpty('app.private_key', 'Did you forget to set a value for the "app.private_key" parameter?');
+
+If a non-empty parameter is ``null``, an empty string ``''``, or an empty array ``[]``,
+Symfony will throw an exception. This validation is **not** made at compile time
+but when attempting to retrieve the value of the parameter.
+
+.. versionadded:: 7.2
+
+    Validating non-empty parameters was introduced in Symfony 7.2.
 
 .. seealso::
 
@@ -948,6 +946,49 @@ get the environment variables and will not spend time parsing the ``.env`` files
     Update your deployment tools/workflow to run the ``dotenv:dump`` command after
     each deploy to improve the application performance.
 
+Storing Environment Variables In Other Files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, the environment variables are stored in the ``.env`` file located
+at the root of your project. However, you can store them in other files in
+multiple ways.
+
+If you use the :doc:`Runtime component </components/runtime>`, the dotenv
+path is part of the options you can set in your ``composer.json`` file:
+
+.. code-block:: json
+
+      {
+          // ...
+          "extra": {
+              // ...
+              "runtime": {
+                  "dotenv_path": "my/custom/path/to/.env"
+              }
+          }
+      }
+
+As an alternate option, you can directly invoke the ``Dotenv`` class in your
+``bootstrap.php`` file or any other file of your application::
+
+    use Symfony\Component\Dotenv\Dotenv;
+
+    (new Dotenv())->bootEnv(dirname(__DIR__).'my/custom/path/to/.env');
+
+Symfony will then look for the environment variables in that file, but also in
+the local and environment-specific files (e.g. ``.*.local`` and
+``.*.<environment>.local``). Read
+:ref:`how to override environment variables <configuration-multiple-env-files>`
+to learn more about this.
+
+If you need to know the path to the ``.env`` file that Symfony is using, you can
+read the ``SYMFONY_DOTENV_PATH`` environment variable in your application.
+
+.. versionadded:: 7.1
+
+    The ``SYMFONY_DOTENV_PATH`` environment variable was introduced in Symfony
+    7.1.
+
 .. _configuration-secrets:
 
 Encrypting Environment Variables (Secrets)
@@ -991,10 +1032,6 @@ Use the ``debug:dotenv`` command to understand how Symfony parses the different
 
     # look for a specific variable passing its full or partial name as an argument
     $ php bin/console debug:dotenv foo
-
-.. versionadded:: 6.2
-
-    The option to pass variable names to ``debug:dotenv`` was introduced in Symfony 6.2.
 
 Additionally, and regardless of how you set environment variables, you can see all
 environment variables, with their values, referenced in Symfony's container configuration,

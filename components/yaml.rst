@@ -214,6 +214,8 @@ During the parsing of the YAML contents, all the ``_`` characters are removed
 from the numeric literal contents, so there is not a limit in the number of
 underscores you can include or the way you group contents.
 
+.. _yaml-flags:
+
 Advanced Usage: Flags
 ---------------------
 
@@ -355,9 +357,25 @@ and the special ``!php/enum`` syntax to parse them as proper PHP enums::
     // the value of the 'foo' key is a string because it missed the `!php/enum` syntax
     // $parameters = ['foo' => 'FooEnum::Foo', 'bar' => 'foo'];
 
-.. versionadded:: 6.2
+You can also use ``!php/enum`` to get all the enumeration cases by only
+giving the enumeration FQCN::
 
-    The support for PHP enumerations was introduced in Symfony 6.2.
+    enum FooEnum: string
+    {
+        case Foo = 'foo';
+        case Bar = 'bar';
+    }
+
+    // ...
+
+    $yaml = '{ bar: !php/enum FooEnum }';
+    $parameters = Yaml::parse($yaml, Yaml::PARSE_CONSTANT);
+    // $parameters = ['bar' => ['foo', 'bar']];
+
+.. versionadded:: 7.1
+
+    The support for using the enum FQCN without specifying a case
+    was introduced in Symfony 7.1.
 
 Parsing and Dumping of Binary Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -410,6 +428,16 @@ you can dump them as ``~`` with the ``DUMP_NULL_AS_TILDE`` flag::
     $dumped = Yaml::dump(['foo' => null], 2, 4, Yaml::DUMP_NULL_AS_TILDE);
     // foo: ~
 
+Another valid representation of the ``null`` value is an empty string. You can
+use the ``DUMP_NULL_AS_EMPTY`` flag to dump null values as empty strings::
+
+    $dumped = Yaml::dump(['foo' => null], 2, 4, Yaml::DUMP_NULL_AS_EMPTY);
+    // foo:
+
+.. versionadded:: 7.3
+
+    The ``DUMP_NULL_AS_EMPTY`` flag was introduced in Symfony 7.3.
+
 Dumping Numeric Keys as Strings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -422,9 +450,57 @@ By default, digit-only array keys are dumped as integers. You can use the
     $dumped = Yaml::dump([200 => 'foo'], 2, 4, Yaml::DUMP_NUMERIC_KEY_AS_STRING);
     // '200': foo
 
-.. versionadded:: 6.3
+Dumping Double Quotes on Values
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    The ``DUMP_NUMERIC_KEY_AS_STRING`` flag was introduced in Symfony 6.3.
+By default, only unsafe string values are enclosed in double quotes (for example,
+if they are reserved words or contain newlines and spaces). Use the
+``DUMP_FORCE_DOUBLE_QUOTES_ON_VALUES`` flag to add double quotes to all string values::
+
+    $dumped = Yaml::dump([
+        'foo' => 'bar', 'some foo' => 'some bar', 'x' => 3.14, 'y' => true, 'z' => null,
+    ]);
+    // foo: bar, 'some foo': 'some bar', x: 3.14, 'y': true, z: null
+
+    $dumped = Yaml::dump([
+        'foo' => 'bar', 'some foo' => 'some bar', 'x' => 3.14, 'y' => true, 'z' => null,
+    ], 2, 4, Yaml::DUMP_FORCE_DOUBLE_QUOTES_ON_VALUES);
+    // "foo": "bar", "some foo": "some bar", "x": 3.14, "y": true, "z": null
+
+.. versionadded:: 7.3
+
+    The ``Yaml::DUMP_FORCE_DOUBLE_QUOTES_ON_VALUES`` flag was introduced in Symfony 7.3.
+
+Dumping Collection of Maps
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the YAML component dumps collections of maps, it uses a hyphen on a separate
+line as a delimiter:
+
+.. code-block:: yaml
+
+    planets:
+      -
+        name: Mercury
+        distance: 57910000
+      -
+        name: Jupiter
+        distance: 778500000
+
+To produce a more compact output where the delimiter is included within the map,
+use the ``Yaml::DUMP_COMPACT_NESTED_MAPPING`` flag:
+
+.. code-block:: yaml
+
+    planets:
+      - name: Mercury
+        distance: 57910000
+      - name: Jupiter
+        distance: 778500000
+
+.. versionadded:: 7.3
+
+    The ``Yaml::DUMP_COMPACT_NESTED_MAPPING`` flag was introduced in Symfony 7.3.
 
 Syntax Validation
 ~~~~~~~~~~~~~~~~~

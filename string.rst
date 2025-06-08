@@ -1,11 +1,11 @@
-The String Component
-====================
+Creating and Manipulating Strings
+=================================
 
-    The String component provides a single object-oriented API to work with
-    three "unit systems" of strings: bytes, code points and grapheme clusters.
+Symfony provides an object-oriented API to work with Unicode strings (as bytes,
+code points and grapheme clusters). This API is available via the String component,
+which you must first install in your application:
 
-Installation
-------------
+.. _installation:
 
 .. code-block:: terminal
 
@@ -203,7 +203,10 @@ Methods to Change Case
 ::
 
     // changes all graphemes/code points to lower case
-    u('FOO Bar')->lower();  // 'foo bar'
+    u('FOO Bar Brİan')->lower();  // 'foo bar bri̇an'
+    // changes all graphemes/code points to lower case according to locale-specific case mappings
+    u('FOO Bar Brİan')->localeLower('en');  // 'foo bar bri̇an'
+    u('FOO Bar Brİan')->localeLower('lt');  // 'foo bar bri̇̇an'
 
     // when dealing with different languages, uppercase/lowercase is not enough
     // there are three cases (lower, upper, title), some characters have no case,
@@ -213,18 +216,41 @@ Methods to Change Case
     u('Die O\'Brian Straße')->folded(); // "die o'brian strasse"
 
     // changes all graphemes/code points to upper case
-    u('foo BAR')->upper(); // 'FOO BAR'
+    u('foo BAR bάz')->upper(); // 'FOO BAR BΆZ'
+    // changes all graphemes/code points to upper case according to locale-specific case mappings
+    u('foo BAR bάz')->localeUpper('en'); // 'FOO BAR BΆZ'
+    u('foo BAR bάz')->localeUpper('el'); // 'FOO BAR BAZ'
 
     // changes all graphemes/code points to "title case"
-    u('foo bar')->title();     // 'Foo bar'
-    u('foo bar')->title(allWords: true); // 'Foo Bar'
+    u('foo ijssel')->title();               // 'Foo ijssel'
+    u('foo ijssel')->title(allWords: true); // 'Foo Ijssel'
+    // changes all graphemes/code points to "title case" according to locale-specific case mappings
+    u('foo ijssel')->localeTitle('en'); // 'Foo ijssel'
+    u('foo ijssel')->localeTitle('nl'); // 'Foo IJssel'
 
     // changes all graphemes/code points to camelCase
     u('Foo: Bar-baz.')->camel(); // 'fooBarBaz'
     // changes all graphemes/code points to snake_case
     u('Foo: Bar-baz.')->snake(); // 'foo_bar_baz'
-    // other cases can be achieved by chaining methods. E.g. PascalCase:
-    u('Foo: Bar-baz.')->camel()->title(); // 'FooBarBaz'
+    // changes all graphemes/code points to kebab-case
+    u('Foo: Bar-baz.')->kebab(); // 'foo-bar-baz'
+    // changes all graphemes/code points to PascalCase
+    u('Foo: Bar-baz.')->pascal(); // 'FooBarBaz'
+    // other cases can be achieved by chaining methods, e.g. :
+    u('Foo: Bar-baz.')->camel()->upper(); // 'FOOBARBAZ'
+
+.. versionadded:: 7.1
+
+    The ``localeLower()``, ``localeUpper()`` and ``localeTitle()`` methods were
+    introduced in Symfony 7.1.
+
+.. versionadded:: 7.2
+
+    The ``kebab()`` method was introduced in Symfony 7.2.
+
+.. versionadded:: 7.3
+
+    The ``pascal()`` method was introduced in Symfony 7.3.
 
 The methods of all string classes are case-sensitive by default. You can perform
 case-insensitive operations with the ``ignoreCase()`` method::
@@ -381,10 +407,19 @@ Methods to Join, Split, Truncate and Reverse
     u('Lorem Ipsum')->truncate(80);            // 'Lorem Ipsum'
     // the second argument is the character(s) added when a string is cut
     // (the total length includes the length of this character(s))
-    u('Lorem Ipsum')->truncate(8, '…');             // 'Lorem I…'
-    // if the third argument is false, the last word before the cut is kept
-    // even if that generates a string longer than the desired length
-    u('Lorem Ipsum')->truncate(8, '…', cut: false); // 'Lorem Ipsum'
+    // (note that '…' is a single character that includes three dots; it's not '...')
+    u('Lorem Ipsum')->truncate(8, '…');        // 'Lorem I…'
+    // the third optional argument defines how to cut words when the length is exceeded
+    // the default value is TruncateMode::Char which cuts the string at the exact given length
+    u('Lorem ipsum dolor sit amet')->truncate(8, cut: TruncateMode::Char);       // 'Lorem ip'
+    // returns up to the last complete word that fits in the given length without surpassing it
+    u('Lorem ipsum dolor sit amet')->truncate(8, cut: TruncateMode::WordBefore); // 'Lorem'
+    // returns up to the last complete word that fits in the given length, surpassing it if needed
+    u('Lorem ipsum dolor sit amet')->truncate(8, cut: TruncateMode::WordAfter);   // 'Lorem ipsum'
+
+.. versionadded:: 7.2
+
+    The ``TruncateMode`` parameter for truncate function was introduced in Symfony 7.2.
 
 ::
 
@@ -493,6 +528,13 @@ requested during the program execution. You can also create lazy strings from a
     // hash computation only if it's needed
     $lazyHash = LazyString::fromStringable(new Hash());
 
+Working with Emojis
+-------------------
+
+These contents have been moved to the :doc:`Emoji component docs </emoji>`.
+
+.. _string-slugger:
+
 Slugger
 -------
 
@@ -565,11 +607,8 @@ the injected slugger is the same as the request locale::
 Slug Emojis
 ~~~~~~~~~~~
 
-.. versionadded:: 6.2
-
-    The Emoji transliteration feature was introduced in Symfony 6.2.
-
-You can transform any emojis into their textual representation::
+You can also combine the :ref:`emoji transliterator <emoji-transliteration>`
+with the slugger to transform any emojis into their textual representation::
 
     use Symfony\Component\String\Slugger\AsciiSlugger;
 
@@ -583,7 +622,7 @@ You can transform any emojis into their textual representation::
     // $slug = 'un-chat-qui-sourit-chat-noir-et-un-tete-de-lion-vont-au-parc-national';
 
 If you want to use a specific locale for the emoji, or to use the short codes
-from GitHub or Slack, use the first argument of ``withEmoji()`` method::
+from GitHub, Gitlab or Slack, use the first argument of ``withEmoji()`` method::
 
     use Symfony\Component\String\Slugger\AsciiSlugger;
 
@@ -592,20 +631,6 @@ from GitHub or Slack, use the first argument of ``withEmoji()`` method::
 
     $slug = $slugger->slug('a 😺, 🐈‍⬛, and a 🦁');
     // $slug = 'a-smiley-cat-black-cat-and-a-lion';
-
-If you want to strip emojis from slugs, use the special ``strip`` locale::
-
-    use Symfony\Component\String\Slugger\AsciiSlugger;
-
-    $slugger = new AsciiSlugger();
-    $slugger = $slugger->withEmoji('strip');
-
-    $slug = $slugger->slug('a 😺, 🐈‍⬛, and a 🦁');
-    // $slug = 'a-and-a';
-
-.. versionadded:: 6.3
-
-    The option to strip emojis from slugs was introduced in Symfony 6.3.
 
 .. _string-inflector:
 
@@ -641,11 +666,28 @@ class to convert English words from/to singular/plural with confidence::
 The value returned by both methods is always an array because sometimes it's not
 possible to determine a unique singular/plural form for the given word.
 
+Symfony also provides inflectors for other languages::
+
+    use Symfony\Component\String\Inflector\FrenchInflector;
+
+    $inflector = new FrenchInflector();
+    $result = $inflector->singularize('souris'); // ['souris']
+    $result = $inflector->pluralize('hôpital');  // ['hôpitaux']
+
+    use Symfony\Component\String\Inflector\SpanishInflector;
+
+    $inflector = new SpanishInflector();
+    $result = $inflector->singularize('aviones'); // ['avión']
+    $result = $inflector->pluralize('miércoles'); // ['miércoles']
+
+.. versionadded:: 7.2
+
+    The ``SpanishInflector`` class was introduced in Symfony 7.2.
+
 .. note::
 
-    Symfony also provides a :class:`Symfony\\Component\\String\\Inflector\\FrenchInflector`
-    and an :class:`Symfony\\Component\\String\\Inflector\\InflectorInterface` if
-    you need to implement your own inflector.
+    Symfony provides an :class:`Symfony\\Component\\String\\Inflector\\InflectorInterface`
+    in case you need to implement your own inflector.
 
 .. _`ASCII`: https://en.wikipedia.org/wiki/ASCII
 .. _`Unicode`: https://en.wikipedia.org/wiki/Unicode

@@ -162,10 +162,6 @@ each time you ask for it.
                 # this creates a service per class whose id is the fully-qualified class name
                 App\:
                     resource: '../src/'
-                    exclude:
-                        - '../src/DependencyInjection/'
-                        - '../src/Entity/'
-                        - '../src/Kernel.php'
 
                 # order is important in this file because service definitions
                 # always *replace* previous ones; add your own service configuration below
@@ -187,7 +183,7 @@ each time you ask for it.
 
                     <!-- makes classes in src/ available to be used as services -->
                     <!-- this creates a service per class whose id is the fully-qualified class name -->
-                    <prototype namespace="App\" resource="../src/" exclude="../src/{DependencyInjection,Entity,Kernel.php}"/>
+                    <prototype namespace="App\" resource="../src/"/>
 
                     <!-- order is important in this file because service definitions
                          always *replace* previous ones; add your own service configuration below -->
@@ -212,8 +208,7 @@ each time you ask for it.
 
                 // makes classes in src/ available to be used as services
                 // this creates a service per class whose id is the fully-qualified class name
-                $services->load('App\\', '../src/')
-                    ->exclude('../src/{DependencyInjection,Entity,Kernel.php}');
+                $services->load('App\\', '../src/');
 
                 // order is important in this file because service definitions
                 // always *replace* previous ones; add your own service configuration below
@@ -221,14 +216,56 @@ each time you ask for it.
 
     .. tip::
 
-        The value of the ``resource`` and ``exclude`` options can be any valid
-        `glob pattern`_. The value of the ``exclude`` option can also be an
-        array of glob patterns.
+        The value of the ``resource`` option can be any valid `glob pattern`_.
 
     Thanks to this configuration, you can automatically use any classes from the
     ``src/`` directory as a service, without needing to manually configure
     it. Later, you'll learn how to :ref:`import many services at once
     <service-psr4-loader>` with resource.
+
+    If some files or directories in your project should not become services, you
+    can exclude them using the ``exclude`` option:
+
+    .. configuration-block::
+
+        .. code-block:: yaml
+
+            # config/services.yaml
+            services:
+                # ...
+                App\:
+                    resource: '../src/'
+                    exclude:
+                        - '../src/SomeDirectory/'
+                        - '../src/AnotherDirectory/'
+                        - '../src/SomeFile.php'
+
+        .. code-block:: xml
+
+            <!-- config/services.xml -->
+            <?xml version="1.0" encoding="UTF-8" ?>
+            <container xmlns="http://symfony.com/schema/dic/services"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:schemaLocation="http://symfony.com/schema/dic/services
+                    https://symfony.com/schema/dic/services/services-1.0.xsd">
+
+                <services>
+                    <prototype namespace="App\" resource="../src/" exclude="../src/{SomeDirectory,AnotherDirectory,Kernel.php}"/>
+                    <!-- ... -->
+                </services>
+            </container>
+
+        .. code-block:: php
+
+            // config/services.php
+            namespace Symfony\Component\DependencyInjection\Loader\Configurator;
+
+            return function(ContainerConfigurator $container): void {
+                // ...
+
+                $services->load('App\\', '../src/')
+                    ->exclude('../src/{SomeDirectory,AnotherDirectory,Kernel.php}');
+            };
 
     If you'd prefer to manually wire your service, you can
     :ref:`use explicit configuration <services-explicitly-configure-wire-services>`.
@@ -259,6 +296,32 @@ as a service in some environments::
     {
         // ...
     }
+
+If you want to exclude a service from being registered in a specific
+environment, you can use the ``#[WhenNot]`` attribute::
+
+    use Symfony\Component\DependencyInjection\Attribute\WhenNot;
+
+    // SomeClass is registered in all environments except "dev"
+
+    #[WhenNot(env: 'dev')]
+    class SomeClass
+    {
+        // ...
+    }
+
+    // you can apply more than one WhenNot attribute to the same class
+
+    #[WhenNot(env: 'dev')]
+    #[WhenNot(env: 'test')]
+    class AnotherClass
+    {
+        // ...
+    }
+
+.. versionadded:: 7.2
+
+    The ``#[WhenNot]`` attribute was introduced in Symfony 7.2.
 
 .. _services-constructor-injection:
 
@@ -814,10 +877,6 @@ Our configuration looks like this:
     Closures can be injected :ref:`by using autowiring <autowiring_closures>`
     and its dedicated attributes.
 
-.. versionadded:: 6.1
-
-    The ``closure`` argument type was introduced in Symfony 6.1.
-
 .. _services-binding:
 
 Binding Arguments by Name or Type
@@ -1038,20 +1097,32 @@ to them.
 Linting Service Definitions
 ---------------------------
 
-The ``lint:container`` command checks that the arguments injected into services
-match their type declarations. It's useful to run it before deploying your
+The ``lint:container`` command performs additional checks to ensure the container
+is properly configured. It is useful to run this command before deploying your
 application to production (e.g. in your continuous integration server):
 
 .. code-block:: terminal
 
     $ php bin/console lint:container
 
-Checking the types of all service arguments whenever the container is compiled
-can hurt performance. That's why this type checking is implemented in a
-:doc:`compiler pass </service_container/compiler_passes>` called
-``CheckTypeDeclarationsPass`` which is disabled by default and enabled only when
-executing the ``lint:container`` command. If you don't mind the performance
-loss, enable the compiler pass in your application.
+    # optionally, you can force the resolution of environment variables;
+    # the command will fail if any of those environment variables are missing
+    $ php bin/console lint:container --resolve-env-vars
+
+.. versionadded:: 7.2
+
+    The ``--resolve-env-vars`` option was introduced in Symfony 7.2.
+
+Performing those checks whenever the container is compiled can hurt performance.
+That's why they are implemented in :doc:`compiler passes </service_container/compiler_passes>`
+called ``CheckTypeDeclarationsPass`` and ``CheckAliasValidityPass``, which are
+disabled by default and enabled only when executing the ``lint:container`` command.
+If you don't mind the performance loss, you can enable these compiler passes in
+your application.
+
+.. versionadded:: 7.1
+
+    The ``CheckAliasValidityPass`` compiler pass was introduced in Symfony 7.1.
 
 .. _container-public:
 
@@ -1187,11 +1258,6 @@ key. For example, the default Symfony configuration contains this:
     `glob pattern`_. If you want to exclude only a few services, you
     may use the :class:`Symfony\\Component\\DependencyInjection\\Attribute\\Exclude`
     attribute directly on your class to exclude it.
-
-    .. versionadded:: 6.3
-
-        The :class:`Symfony\\Component\\DependencyInjection\\Attribute\\Exclude`
-        attribute was introduced in Symfony 6.3.
 
 This can be used to quickly make many classes available as services and apply some
 default configuration. The ``id`` of each service is its fully-qualified class name.
@@ -1470,11 +1536,6 @@ Thanks to the ``#[AutowireCallable]`` attribute, you can now inject this
             // ...
         }
     }
-
-.. versionadded:: 6.3
-
-    The :class:`Symfony\\Component\\DependencyInjection\\Attribute\\AutowireCallable`
-    attribute was introduced in Symfony 6.3.
 
 Instead of using the ``#[AutowireCallable]`` attribute, you can also generate
 an adapter for a functional interface through configuration:

@@ -155,21 +155,29 @@ In a Symfony application, call this method in your kernel class::
         }
     }
 
-In a Symfony bundle, call this method in the ``load()`` method of the
-:doc:`bundle extension class </bundles/extension>`::
+In bundles extending the :class:`Symfony\\Component\\HttpKernel\\Bundle\\AbstractBundle`
+class, call this method in the ``loadExtension()`` method of the main bundle class::
 
-    // src/DependencyInjection/MyBundleExtension.php
-    class MyBundleExtension extends Extension
+    // ...
+    use Symfony\Component\DependencyInjection\ContainerBuilder;
+    use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+    use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+    
+    class MyBundle extends AbstractBundle
     {
-        // ...
-
-        public function load(array $configs, ContainerBuilder $container): void
+        public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
         {
-            $container->registerForAutoconfiguration(CustomInterface::class)
+            $builder
+                ->registerForAutoconfiguration(CustomInterface::class)
                 ->addTag('app.custom_tag')
             ;
         }
     }
+
+.. note::
+
+    For bundles not extending the ``AbstractBundle`` class, call this method in
+    the ``load()`` method of the :doc:`bundle extension class </bundles/extension>`.
 
 Autoconfiguration registering is not limited to interfaces. It is possible
 to use PHP attributes to autoconfigure services by using the
@@ -458,6 +466,8 @@ or from your kernel::
     :ref:`components documentation <components-di-compiler-pass>` for more
     information.
 
+.. _tags_additional-attributes:
+
 Adding Additional Attributes on Tags
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -547,10 +557,6 @@ To answer this, change the service declaration:
                 ->tag('app.mail_transport', ['alias' => ['sendmail', 'anotherAlias']])
             ;
         };
-
-.. versionadded:: 6.2
-
-    Support for attributes as array was introduced in Symfony 6.2.
 
 .. tip::
 
@@ -676,13 +682,13 @@ directly via PHP attributes:
         // src/HandlerCollection.php
         namespace App;
 
-        use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
+        use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
         class HandlerCollection
         {
             public function __construct(
                 // the attribute must be applied directly to the argument to autowire
-                #[TaggedIterator('app.handler')]
+                #[AutowireIterator('app.handler')]
                 iterable $handlers
             ) {
             }
@@ -752,7 +758,7 @@ directly via PHP attributes:
 
 .. note::
 
-    Some IDEs will show an error when using ``#[TaggedIterator]`` together
+    Some IDEs will show an error when using ``#[AutowireIterator]`` together
     with the `PHP constructor promotion`_:
     *"Attribute cannot be applied to a property because it does not contain the 'Attribute::TARGET_PROPERTY' flag"*.
     The reason is that those constructor arguments are both parameters and class
@@ -768,12 +774,12 @@ iterator, add the ``exclude`` option:
         // src/HandlerCollection.php
         namespace App;
 
-        use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
+        use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
         class HandlerCollection
         {
             public function __construct(
-                #[TaggedIterator('app.handler', exclude: ['App\Handler\Three'])]
+                #[AutowireIterator('app.handler', exclude: ['App\Handler\Three'])]
                 iterable $handlers
             ) {
             }
@@ -851,12 +857,12 @@ disabled by setting the ``exclude_self`` option to ``false``:
         // src/HandlerCollection.php
         namespace App;
 
-        use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
+        use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
         class HandlerCollection
         {
             public function __construct(
-                #[TaggedIterator('app.handler', exclude: ['App\Handler\Three'], excludeSelf: false)]
+                #[AutowireIterator('app.handler', exclude: ['App\Handler\Three'], excludeSelf: false)]
                 iterable $handlers
             ) {
             }
@@ -922,15 +928,6 @@ disabled by setting the ``exclude_self`` option to ``false``:
                 ->args([tagged_iterator('app.handler', exclude: [App\Handler\Three::class], excludeSelf: false)])
             ;
         };
-
-.. versionadded:: 6.1
-
-    The ``exclude`` option was introduced in Symfony 6.1.
-
-.. versionadded:: 6.3
-
-    The ``exclude_self`` option and the automatic exclusion of the referencing
-    service in the injected iterable were introduced in Symfony 6.3.
 
 .. seealso::
 
@@ -1010,12 +1007,12 @@ you can define it in the configuration of the collecting service:
         // src/HandlerCollection.php
         namespace App;
 
-        use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
+        use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
         class HandlerCollection
         {
             public function __construct(
-                #[TaggedIterator('app.handler', defaultPriorityMethod: 'getPriority')]
+                #[AutowireIterator('app.handler', defaultPriorityMethod: 'getPriority')]
                 iterable $handlers
             ) {
             }
@@ -1084,12 +1081,12 @@ to index the services:
         // src/HandlerCollection.php
         namespace App;
 
-        use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
+        use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
         class HandlerCollection
         {
             public function __construct(
-                #[TaggedIterator('app.handler', indexAttribute: 'key')]
+                #[AutowireIterator('app.handler', indexAttribute: 'key')]
                 iterable $handlers
             ) {
             }
@@ -1198,12 +1195,12 @@ get the value used to index the services:
         // src/HandlerCollection.php
         namespace App;
 
-        use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
+        use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
         class HandlerCollection
         {
             public function __construct(
-                #[TaggedIterator('app.handler', defaultIndexMethod: 'getIndex')]
+                #[AutowireIterator('app.handler', defaultIndexMethod: 'getIndex')]
                 iterable $handlers
             ) {
             }
@@ -1291,5 +1288,20 @@ be used directly on the class of the service you want to configure::
     {
         // ...
     }
+
+You can apply the ``#[AsTaggedItem]`` attribute multiple times to register the
+same service under different indexes:
+
+    #[AsTaggedItem(index: 'handler_one', priority: 5)]
+    #[AsTaggedItem(index: 'handler_two', priority: 20)]
+    class SomeService
+    {
+        // ...
+    }
+
+.. versionadded:: 7.3
+
+    The feature to apply the ``#[AsTaggedItem]`` attribute multiple times was
+    introduced in Symfony 7.3.
 
 .. _`PHP constructor promotion`: https://www.php.net/manual/en/language.oop5.decon.php#language.oop5.decon.constructor.promotion

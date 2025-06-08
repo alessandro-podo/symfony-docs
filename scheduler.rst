@@ -1,9 +1,10 @@
 Scheduler
 =========
 
-.. versionadded:: 6.3
+.. admonition:: Screencast
+    :class: screencast
 
-    The Scheduler component was introduced in Symfony 6.3
+    Like video tutorials? Check out this `Scheduler quick-start screencast`_.
 
 The scheduler component manages task scheduling within your PHP application, like
 running a task each night at 3 AM, every two weeks except for holidays or any
@@ -19,17 +20,16 @@ stack Symfony application.
 Installation
 ------------
 
-In applications using :ref:`Symfony Flex <symfony-flex>`, run this command to
-install the scheduler component:
+Run this command to install the scheduler component:
 
 .. code-block:: terminal
 
     $ composer require symfony/scheduler
 
-.. tip::
+.. note::
 
-    Starting in `MakerBundle`_ ``v1.58.0``, you can run ``php bin/console make:schedule``
-    to generate a basic schedule, that you can customize to create your own Scheduler.
+    In applications using :ref:`Symfony Flex <symfony-flex>`, installing the component
+    also creates an initial schedule that's ready to start adding your tasks.
 
 Symfony Scheduler Basics
 ------------------------
@@ -178,12 +178,6 @@ methods::
     $trigger->inner(); // CronExpressionTrigger
     $trigger->decorators(); // [ExcludeTimeTrigger, JitterTrigger]
 
-.. versionadded:: 6.4
-
-    The :method:`Symfony\\Component\\Scheduler\\Trigger\\AbstractDecoratedTrigger::inner`
-    and :method:`Symfony\\Component\\Scheduler\\Trigger\\AbstractDecoratedTrigger::decorators`
-    methods were introduced in Symfony 6.4.
-
 Most of them can be created via the :class:`Symfony\\Component\\Scheduler\\RecurringMessage`
 class, as shown in the following examples.
 
@@ -203,10 +197,6 @@ Then, define the trigger date/time using the same syntax as the
 
     // optionally you can define the timezone used by the cron expression
     RecurringMessage::cron('* * * * *', new Message(), new \DateTimeZone('Africa/Malabo'));
-
-.. versionadded:: 6.4
-
-    Since version 6.4, it is now possible to add and define a timezone as a 3rd argument.
 
 .. tip::
 
@@ -406,10 +396,6 @@ at a defined frequency. For these dynamic scenarios, it gives you the capability
 to dynamically define our message(s) instead of statically. This is achieved by
 defining a :class:`Symfony\\Component\\Scheduler\\Trigger\\CallbackMessageProvider`.
 
-.. versionadded:: 6.4
-
-    The ``CallbackMessageProvider`` was introduced in Symfony 6.4.
-
 Essentially, this means you can dynamically, at runtime, define your message(s)
 through a callback that gets executed each time the scheduler transport
 checks for messages to be generated::
@@ -452,10 +438,10 @@ by adding one of these attributes to a service or a command:
 :class:`Symfony\\Component\\Scheduler\\Attribute\\AsCronTask`.
 
 For both of these attributes, you have the ability to define the schedule to
-use via the ``schedule``option. By default, the ``default`` named schedule will
+use via the ``schedule`` option. By default, the ``default`` named schedule will
 be used. Also, by default, the ``__invoke`` method of your service will be called
-but, it's also possible to specify the method to call via the ``method``option
-and you can define arguments via ``arguments``option if necessary.
+but, it's also possible to specify the method to call via the ``method`` option
+and you can define arguments via ``arguments`` option if necessary.
 
 .. _scheduler-attributes-cron-task:
 
@@ -493,11 +479,6 @@ The attribute takes more parameters to customize the trigger::
     // arguments and options to the command using the 'arguments' option:
     #[AsCronTask('0 0 * * *', arguments: 'some_argument --some-option --another-option=some_value')]
     class MyCommand extends Command
-
-.. versionadded:: 6.4
-
-    The :class:`Symfony\\Component\\Scheduler\\Attribute\\AsCronTask` attribute
-    was introduced in Symfony 6.4.
 
 .. _scheduler-attributes-periodic-task:
 
@@ -547,11 +528,6 @@ The ``#[AsPeriodicTask]`` attribute takes many parameters to customize the trigg
     // arguments and options to the command using the 'arguments' option:
     #[AsPeriodicTask(frequency: '1 day', arguments: 'some_argument --some-option --another-option=some_value')]
     class MyCommand extends Command
-
-.. versionadded:: 6.4
-
-    The :class:`Symfony\\Component\\Scheduler\\Attribute\\AsPeriodicTask` attribute
-    was introduced in Symfony 6.4.
 
 Managing Scheduled Messages
 ---------------------------
@@ -767,9 +743,14 @@ after a message is consumed::
         $schedule = $event->getSchedule();
         $context = $event->getMessageContext();
         $message = $event->getMessage();
+        $result = $event->getResult();
 
-        // do something with the schedule, context or message
+        // do something with the schedule, context, message or result
     }
+
+.. versionadded:: 7.3
+
+    The ``getResult()`` method was introduced in Symfony 7.3.
 
 Execute this command to find out which listeners are registered for this event
 and their priorities:
@@ -809,11 +790,6 @@ and their priorities:
 .. code-block:: terminal
 
     $ php bin/console debug:event-dispatcher "Symfony\Component\Scheduler\Event\FailureEvent"
-
-.. versionadded:: 6.4
-
-    The ``PreRunEvent``, ``PostRunEvent`` and ``FailureEvent`` events were
-    introduced in Symfony 6.4.
 
 .. _consuming-messages-running-the-worker:
 
@@ -893,11 +869,6 @@ code::
 Modifying the Schedule at Runtime
 ---------------------------------
 
-.. versionadded:: 6.4
-
-    Support for modifying the schedule at runtime and recalculating the heap
-    was introduced in Symfony 6.4.
-
 When a recurring message is added to or removed from the schedule,
 the scheduler automatically restarts and recalculates the internal trigger heap.
 This enables dynamic control of scheduled tasks at runtime::
@@ -976,7 +947,8 @@ While this behavior may not necessarily pose a problem, there is a possibility t
 
 That's why the scheduler allows to remember the last execution date of a message
 via the ``stateful`` option (and the :doc:`Cache component </components/cache>`).
-This allows the system to retain the state of the schedule, ensuring that when a worker is restarted, it resumes from the point it left off.::
+This allows the system to retain the state of the schedule, ensuring that when a
+worker is restarted, it resumes from the point it left off::
 
     // src/Scheduler/SaleTaskProvider.php
     namespace App\Scheduler;
@@ -995,6 +967,32 @@ This allows the system to retain the state of the schedule, ensuring that when a
                 ->stateful($this->cache)
         }
     }
+
+With the ``stateful`` option, all missed messages will be handled. If you need to
+handle a message only once, you can use the ``processOnlyLastMissedRun`` option::
+
+    // src/Scheduler/SaleTaskProvider.php
+    namespace App\Scheduler;
+
+    #[AsSchedule('uptoyou')]
+    class SaleTaskProvider implements ScheduleProviderInterface
+    {
+        public function getSchedule(): Schedule
+        {
+            $this->removeOldReports = RecurringMessage::cron('3 8 * * 1', new CleanUpOldSalesReport());
+
+            return $this->schedule ??= (new Schedule())
+                ->with(
+                    // ...
+                )
+                ->stateful($this->cache)
+                ->processOnlyLastMissedRun(true)
+        }
+    }
+
+.. versionadded:: 7.2
+
+    The ``processOnlyLastMissedRun`` option was introduced in Symfony 7.2.
 
 To scale your schedules more effectively, you can use multiple workers. In such
 cases, a good practice is to add a :doc:`lock </components/lock>` to prevent the
@@ -1048,14 +1046,9 @@ When using the ``RedispatchMessage``, Symfony will attach a
 :class:`Symfony\\Component\\Scheduler\\Messenger\\ScheduledStamp` to the message,
 helping you identify those messages when needed.
 
-.. versionadded:: 6.4
-
-    Automatically attaching a :class:`Symfony\\Component\\Scheduler\\Messenger\\ScheduledStamp`
-    to redispatched messages was introduced in Symfony 6.4.
-
-.. _`MakerBundle`: https://symfony.com/doc/current/bundles/SymfonyMakerBundle/index.html
 .. _`Deploying to Production`: https://symfony.com/doc/current/messenger.html#deploying-to-production
 .. _`Memoizing`: https://en.wikipedia.org/wiki/Memoization
 .. _`cron command-line utility`: https://en.wikipedia.org/wiki/Cron
 .. _`crontab.guru website`: https://crontab.guru/
 .. _`relative formats`: https://www.php.net/manual/en/datetime.formats.php#datetime.formats.relative
+.. _`Scheduler quick-start screencast`: https://symfonycasts.com/screencast/mailtrap/bonus-symfony-scheduler

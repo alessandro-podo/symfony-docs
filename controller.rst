@@ -230,10 +230,6 @@ command:
 
     You can read more about this attribute in :ref:`autowire-attribute`.
 
-    .. versionadded:: 6.1
-
-        The ``#[Autowire]`` attribute was introduced in Symfony 6.1.
-
 Like with all services, you can also use regular
 :ref:`constructor injection <services-constructor-injection>` in your
 controllers.
@@ -375,6 +371,11 @@ The ``MapQueryParameter`` attribute supports the following argument types:
 * ``float``
 * ``int``
 * ``string``
+* Objects that extend :class:`Symfony\\Component\\Uid\\AbstractUid`
+
+.. versionadded:: 7.3
+
+    Support for ``AbstractUid`` objects was introduced in Symfony 7.3.
 
 ``#[MapQueryParameter]`` can take an optional argument called ``filter``. You can use the
 `Validate Filters`_ constants defined in PHP::
@@ -392,11 +393,6 @@ The ``MapQueryParameter`` attribute supports the following argument types:
     {
         // ...
     }
-
-.. versionadded:: 6.3
-
-    The :class:`Symfony\\Component\\HttpKernel\\Attribute\\MapQueryParameter` attribute
-    was introduced in Symfony 6.3.
 
 .. _controller-mapping-query-string:
 
@@ -461,6 +457,26 @@ HTTP status to return if the validation fails::
 
 The default status code returned if the validation fails is 404.
 
+If you want to map your object to a nested array in your query using a specific key,
+set the ``key`` option in the ``#[MapQueryString]`` attribute::
+
+    use App\Model\SearchDto;
+    use Symfony\Component\HttpFoundation\Response;
+    use Symfony\Component\HttpKernel\Attribute\MapQueryString;
+
+    // ...
+
+    public function dashboard(
+        #[MapQueryString(key: 'search')] SearchDto $searchDto
+    ): Response
+    {
+        // ...
+    }
+
+.. versionadded:: 7.3
+
+    The ``key`` option of ``#[MapQueryString]`` was introduced in Symfony 7.3.
+
 If you need a valid DTO even when the request query string is empty, set a
 default value for your controller arguments::
 
@@ -476,15 +492,6 @@ default value for your controller arguments::
     {
         // ...
     }
-
-.. versionadded:: 6.3
-
-    The :class:`Symfony\\Component\\HttpKernel\\Attribute\\MapQueryString` attribute
-    was introduced in Symfony 6.3.
-
-.. versionadded:: 6.4
-
-    The ``validationFailedStatusCode`` parameter was introduced in Symfony 6.4.
 
 .. _controller-mapping-request-payload:
 
@@ -583,14 +590,137 @@ if you want to map a nested array of specific DTOs::
         ) {}
     }
 
-.. versionadded:: 6.3
+Instead of returning an array of DTO objects, you can tell Symfony to transform
+each DTO object into an array and return something like this:
 
-    The :class:`Symfony\\Component\\HttpKernel\\Attribute\\MapRequestPayload` attribute
-    was introduced in Symfony 6.3.
+.. code-block:: json
 
-.. versionadded:: 6.4
+    [
+        {
+            "firstName": "John",
+            "lastName": "Smith",
+            "age": 28
+        },
+        {
+            "firstName": "Jane",
+            "lastName": "Doe",
+            "age": 30
+        }
+    ]
 
-    The ``validationFailedStatusCode`` parameter was introduced in Symfony 6.4.
+To do so, map the parameter as an array and configure the type of each element
+using the ``type`` option of the attribute::
+
+    public function dashboard(
+        #[MapRequestPayload(type: UserDto::class)] array $users
+    ): Response
+    {
+        // ...
+    }
+
+.. versionadded:: 7.1
+
+    The ``type`` option of ``#[MapRequestPayload]`` was introduced in Symfony 7.1.
+
+.. _controller_map-uploaded-file:
+
+Mapping Uploaded Files
+~~~~~~~~~~~~~~~~~~~~~~
+
+Symfony provides an attribute called ``#[MapUploadedFile]`` to map one or more
+``UploadedFile`` objects to controller arguments::
+
+    namespace App\Controller;
+
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+    use Symfony\Component\HttpFoundation\File\UploadedFile;
+    use Symfony\Component\HttpFoundation\Response;
+    use Symfony\Component\HttpKernel\Attribute\MapUploadedFile;
+    use Symfony\Component\Routing\Attribute\Route;
+
+    class UserController extends AbstractController
+    {
+        #[Route('/user/picture', methods: ['PUT'])]
+        public function changePicture(
+            #[MapUploadedFile] UploadedFile $picture,
+        ): Response {
+            // ...
+        }
+    }
+
+In this example, the associated :doc:`argument resolver <controller/value_resolver>`
+fetches the ``UploadedFile`` based on the argument name (``$picture``). If no file
+is submitted, an ``HttpException`` is thrown. You can change this by making the
+controller argument nullable:
+
+.. code-block:: php-attributes
+
+    #[MapUploadedFile]
+    ?UploadedFile $document
+
+The ``#[MapUploadedFile]`` attribute also allows to pass a list of constraints
+to apply to the uploaded file::
+
+    namespace App\Controller;
+
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+    use Symfony\Component\HttpFoundation\File\UploadedFile;
+    use Symfony\Component\HttpFoundation\Response;
+    use Symfony\Component\HttpKernel\Attribute\MapUploadedFile;
+    use Symfony\Component\Routing\Attribute\Route;
+    use Symfony\Component\Validator\Constraints as Assert;
+
+    class UserController extends AbstractController
+    {
+        #[Route('/user/picture', methods: ['PUT'])]
+        public function changePicture(
+            #[MapUploadedFile([
+                new Assert\File(mimeTypes: ['image/png', 'image/jpeg']),
+                new Assert\Image(maxWidth: 3840, maxHeight: 2160),
+            ])]
+            UploadedFile $picture,
+        ): Response {
+            // ...
+        }
+    }
+
+The validation constraints are checked before injecting the ``UploadedFile`` into
+the controller argument. If there's a constraint violation, an ``HttpException``
+is thrown and the controller's action is not executed.
+
+If you need to upload a collection of files, map them to an array or a variadic
+argument. The given constraint will be applied to all files and if any of them
+fails, an ``HttpException`` is thrown:
+
+.. code-block:: php-attributes
+
+    #[MapUploadedFile(new Assert\File(mimeTypes: ['application/pdf']))]
+    array $documents
+
+    #[MapUploadedFile(new Assert\File(mimeTypes: ['application/pdf']))]
+    UploadedFile ...$documents
+
+Use the ``name`` option to rename the uploaded file to a custom value:
+
+.. code-block:: php-attributes
+
+    #[MapUploadedFile(name: 'something-else')]
+    UploadedFile $document
+
+In addition, you can change the status code of the HTTP exception thrown when
+there are constraint violations:
+
+.. code-block:: php-attributes
+
+    #[MapUploadedFile(
+        constraints: new Assert\File(maxSize: '2M'),
+        validationFailedStatusCode: Response::HTTP_REQUEST_ENTITY_TOO_LARGE
+    )]
+    UploadedFile $document
+
+.. versionadded:: 7.1
+
+    The ``#[MapUploadedFile]`` attribute was introduced in Symfony 7.1.
 
 Managing the Session
 --------------------
@@ -772,11 +902,6 @@ The ``file()`` helper provides some arguments to configure its behavior::
 
 Sending Early Hints
 ~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 6.3
-
-    The Early Hints helper of the ``AbstractController`` was introduced
-    in Symfony 6.3.
 
 `Early hints`_ tell the browser to start downloading some assets even before the
 application sends the response content. This improves perceived performance

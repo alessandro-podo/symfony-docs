@@ -100,33 +100,37 @@ via a third-party provider:
 ===================== =============================================== ===============
 Service               Install with                                    Webhook support
 ===================== =============================================== ===============
+`AhaSend`_            ``composer require symfony/aha-send-mailer``    yes
 `Amazon SES`_         ``composer require symfony/amazon-mailer``
+`Azure`_              ``composer require symfony/azure-mailer``
 `Brevo`_              ``composer require symfony/brevo-mailer``       yes
 `Infobip`_            ``composer require symfony/infobip-mailer``
 `Mailgun`_            ``composer require symfony/mailgun-mailer``     yes
 `Mailjet`_            ``composer require symfony/mailjet-mailer``     yes
+`Mailomat`_           ``composer require symfony/mailomat-mailer``    yes
 `MailPace`_           ``composer require symfony/mail-pace-mailer``
-`MailerSend`_         ``composer require symfony/mailer-send-mailer``
-`Mandrill`_           ``composer require symfony/mailchimp-mailer``
+`MailerSend`_         ``composer require symfony/mailer-send-mailer`` yes
+`Mailtrap`_           ``composer require symfony/mailtrap-mailer``    yes
+`Mandrill`_           ``composer require symfony/mailchimp-mailer``   yes
+`Postal`_             ``composer require symfony/postal-mailer``
 `Postmark`_           ``composer require symfony/postmark-mailer``    yes
+`Resend`_             ``composer require symfony/resend-mailer``      yes
 `Scaleway`_           ``composer require symfony/scaleway-mailer``
 `SendGrid`_           ``composer require symfony/sendgrid-mailer``    yes
+`Sweego`_             ``composer require symfony/sweego-mailer``      yes
 ===================== =============================================== ===============
 
-.. versionadded:: 6.2
+.. versionadded:: 7.1
 
-    The Infobip integration was introduced in Symfony 6.2 and the ``MailPace``
-    integration was renamed in Symfony 6.2 (in previous Symfony versions it was
-    called ``OhMySMTP``).
+    The Azure and Resend integrations were introduced in Symfony 7.1.
 
-.. versionadded:: 6.3
+.. versionadded:: 7.2
 
-    The MailerSend integration was introduced in Symfony 6.3.
+    The Mailomat, Mailtrap, Postal and Sweego integrations were introduced in Symfony 7.2.
 
-.. versionadded:: 6.4
+.. versionadded:: 7.3
 
-    The ``Brevo`` (in previous Symfony versions it was called ``Sendinblue``)
-    and ``Scaleway`` integrations were introduced in Symfony 6.4.
+    The AhaSend integration was introduced in Symfony 7.3.
 
 .. note::
 
@@ -176,9 +180,15 @@ party provider:
 +------------------------+---------------------------------------------------------+
 | Provider               | Formats                                                 |
 +========================+=========================================================+
+| `AhaSend`_             | - API ``ahasend+api://KEY@default``                     |
+|                        | - HTTP n/a                                              |
+|                        | - SMTP ``ahasend+smtp://USERNAME:PASSWORD@default``     |
++------------------------+---------------------------------------------------------+
 | `Amazon SES`_          | - SMTP ``ses+smtp://USERNAME:PASSWORD@default``         |
 |                        | - HTTP ``ses+https://ACCESS_KEY:SECRET_KEY@default``    |
 |                        | - API ``ses+api://ACCESS_KEY:SECRET_KEY@default``       |
++------------------------+---------------------------------------------------------+
+| `Azure`_               | - API ``azure+api://ACS_RESOURCE_NAME:KEY@default``     |
 +------------------------+---------------------------------------------------------+
 | `Brevo`_               | - SMTP ``brevo+smtp://USERNAME:PASSWORD@default``       |
 |                        | - HTTP n/a                                              |
@@ -208,13 +218,29 @@ party provider:
 |                        | - HTTP n/a                                              |
 |                        | - API ``mailjet+api://ACCESS_KEY:SECRET_KEY@default``   |
 +------------------------+---------------------------------------------------------+
+| `Mailomat`_            | - SMTP ``mailomat+smtp://USERNAME:PASSWORD@default``    |
+|                        | - HTTP n/a                                              |
+|                        | - API ``mailomat+api://KEY@default``                    |
++------------------------+---------------------------------------------------------+
 | `MailPace`_            | - SMTP ``mailpace+api://API_TOKEN@default``             |
 |                        | - HTTP n/a                                              |
 |                        | - API ``mailpace+api://API_TOKEN@default``              |
 +------------------------+---------------------------------------------------------+
+| `Mailtrap`_            | - SMTP ``mailtrap+smtp://PASSWORD@default``             |
+|                        | - HTTP n/a                                              |
+|                        | - API ``mailtrap+api://API_TOKEN@default``              |
++------------------------+---------------------------------------------------------+
+| `Postal`_              | - SMTP n/a                                              |
+|                        | - HTTP n/a                                              |
+|                        | - API ``postal+api://API_KEY@BASE_URL``                 |
++------------------------+---------------------------------------------------------+
 | `Postmark`_            | - SMTP ``postmark+smtp://ID@default``                   |
 |                        | - HTTP n/a                                              |
 |                        | - API ``postmark+api://KEY@default``                    |
++------------------------+---------------------------------------------------------+
+| `Resend`_              | - SMTP ``resend+smtp://resend:API_KEY@default``         |
+|                        | - HTTP n/a                                              |
+|                        | - API ``resend+api://API_KEY@default``                  |
 +------------------------+---------------------------------------------------------+
 | `Scaleway`_            | - SMTP ``scaleway+smtp://PROJECT_ID:API_KEY@default``   |
 |                        | - HTTP n/a                                              |
@@ -224,10 +250,10 @@ party provider:
 |                        | - HTTP n/a                                              |
 |                        | - API ``sendgrid+api://KEY@default``                    |
 +------------------------+---------------------------------------------------------+
-
-.. versionadded:: 6.3
-
-    The ``sandbox`` option in ``Mailjet`` API was introduced in Symfony 6.3.
+| `Sweego`_              | - SMTP ``sweego+smtp://LOGIN:PASSWORD@HOST:PORT``       |
+|                        | - HTTP n/a                                              |
+|                        | - API ``sweego+api://API_KEY@default``                  |
++------------------------+---------------------------------------------------------+
 
 .. warning::
 
@@ -241,12 +267,6 @@ party provider:
     to :ref:`send messages in background <mailer-sending-messages-async>`,
     you need to add the ``ping_threshold`` parameter to your ``MAILER_DSN`` with
     a value lower than ``10``: ``ses+smtp://USERNAME:PASSWORD@default?ping_threshold=9``
-
-.. warning::
-
-    If you send custom headers when using the `Amazon SES`_ transport (to receive
-    them later via a webhook), make sure to use the ``ses+https`` provider because
-    it's the only one that supports them.
 
 .. note::
 
@@ -314,6 +334,17 @@ The failover-transport starts using the first transport and if it fails, it
 will retry the same delivery with the next transports until one of them succeeds
 (or until all of them fail).
 
+By default, delivery is retried 60 seconds after a failed attempt. You can adjust
+the retry period by setting the ``retry_period`` option in the DSN:
+
+.. code-block:: env
+
+    MAILER_DSN="failover(postmark+api://ID@default sendgrid+smtp://KEY@default)?retry_period=15"
+
+.. versionadded:: 7.3
+
+    The ``retry_period`` option was introduced in Symfony 7.3.
+
 Load Balancing
 ~~~~~~~~~~~~~~
 
@@ -333,6 +364,17 @@ then switches to the next available transport for each subsequent email.
 As with the failover transport, round-robin retries deliveries until
 a transport succeeds (or all fail). In contrast to the failover transport,
 it *spreads* the load across all its transports.
+
+By default, delivery is retried 60 seconds after a failed attempt. You can adjust
+the retry period by setting the ``retry_period`` option in the DSN:
+
+.. code-block:: env
+
+    MAILER_DSN="roundrobin(postmark+api://ID@default sendgrid+smtp://KEY@default)?retry_period=15"
+
+.. versionadded:: 7.3
+
+    The ``retry_period`` option was introduced in Symfony 7.3.
 
 TLS Peer Verification
 ~~~~~~~~~~~~~~~~~~~~~
@@ -354,9 +396,72 @@ may be specified as SHA1 or MD5 hash::
 
     $dsn = 'smtp://user:pass@smtp.example.com?peer_fingerprint=6A1CF3B08D175A284C30BC10DE19162307C7286E';
 
-.. versionadded:: 6.4
+Disabling Automatic TLS
+~~~~~~~~~~~~~~~~~~~~~~~
 
-    The ``peer_fingerprint`` option was introduced in Symfony 6.4.
+.. versionadded:: 7.1
+
+    The option to disable automatic TLS was introduced in Symfony 7.1.
+
+By default, the Mailer component will use encryption when the OpenSSL extension
+is enabled and the SMTP server supports ``STARTTLS``. This behavior can be turned
+off by calling ``setAutoTls(false)`` on the ``EsmtpTransport`` instance, or by
+setting the ``auto_tls`` option to ``false`` in the DSN::
+
+    $dsn = 'smtp://user:pass@10.0.0.25?auto_tls=false';
+
+.. warning::
+
+    It's not recommended to disable TLS while connecting to an SMTP server over
+    the Internet, but it can be useful when both the application and the SMTP
+    server are in a secured network, where there is no need for additional encryption.
+
+.. note::
+
+    This setting only works when the ``smtp://`` protocol is used.
+
+Ensure TLS
+~~~~~~~~~~
+
+You may want to ensure that TLS is used (either directly or via ``STARTTLS``)
+when sending mail over SMTP, regardless of other options or SMTP server support.
+To require TLS, call ``setRequireTls(true)`` on the ``EsmtpTransport`` instance,
+or set the ``require_tls`` option to ``true`` in the DSN::
+
+    $dsn = 'smtp://user:pass@10.0.0.25?require_tls=true';
+
+When TLS is required, a :class:`Symfony\\Component\\Mailer\\Exception\\TransportException`
+is thrown if a TLS connection cannot be established during the initial communication
+with the SMTP server.
+
+.. note::
+
+    This setting only applies when using the ``smtp://`` protocol.
+
+.. versionadded:: 7.3
+
+    The ``require_tls`` option was introduced in Symfony 7.3.
+
+Binding to IPv4 or IPv6
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 7.3
+
+    The option to bind to IPv4, or IPv6, or a specific IP address was introduced in Symfony 7.3.
+
+By default, the underlying ``SocketStream`` will bind to IPv4 or IPv6 based on the
+available interfaces. You can enforce binding to a specific protocol or IP address
+by using the ``source_ip`` option. To bind to IPv4, use::
+
+    $dsn = 'smtp://smtp.example.com?source_ip=0.0.0.0';
+
+As per RFC2732, IPv6 addresses must be enclosed in square brackets. To bind to IPv6, use::
+
+    $dsn = 'smtp://smtp.example.com?source_ip=[::]';
+
+.. note::
+
+    This option only works when using the ``smtp://`` protocol.
 
 Overriding default SMTP authenticators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -382,11 +487,6 @@ This can be done from ``EsmtpTransport`` constructor or using the
 
     // Option 2: call a method to redefine the authenticators
     $transport->setAuthenticators([new XOAuth2Authenticator()]);
-
-.. versionadded:: 6.3
-
-    The ``$authenticators`` constructor parameter and the ``setAuthenticators()``
-    method were introduced in Symfony 6.3.
 
 Other Options
 ~~~~~~~~~~~~~
@@ -422,10 +522,6 @@ Other Options
     The number of messages to send per second (0 to disable this limitation)::
 
         $dsn = 'smtps://smtp.example.com?max_per_second=2'
-
-    .. versionadded:: 6.2
-
-        The ``max_per_second`` option was introduced in Symfony 6.2.
 
 Custom Transport Factories
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -514,6 +610,10 @@ both strings or address objects::
         // email address as a simple string
         ->from('fabien@example.com')
 
+        // non-ASCII characters are supported both in the local part and the domain;
+        // if the SMTP server doesn't support this feature, you'll see an exception
+        ->from('jânë.dœ@ëxãmplę.com')
+
         // email address as an object
         ->from(new Address('fabien@example.com'))
 
@@ -533,6 +633,11 @@ both strings or address objects::
     Instead of calling ``->from()`` *every* time you create a new email, you can
     :ref:`configure emails globally <mailer-configure-email-globally>` to set the
     same ``From`` email to all messages.
+
+.. versionadded:: 7.2
+
+    Support for non-ASCII email addresses (e.g. ``jânë.dœ@ëxãmplę.com``)
+    was introduced in Symfony 7.2.
 
 .. note::
 
@@ -639,12 +744,6 @@ the ``DataPart``::
         ->addPart(new DataPart(fopen('/path/to/documents/contract.doc', 'r')))
     ;
 
-.. deprecated:: 6.2
-
-    In Symfony versions previous to 6.2, the method ``attachPart()`` could be
-    used to add attachments. This method has been deprecated and replaced
-    with ``addPart()``.
-
 Embedding Images
 ~~~~~~~~~~~~~~~~
 
@@ -695,15 +794,6 @@ method to define a custom Content-ID for the image and use it as its ``cid`` ref
         ->addPart($part->asInline())
         ->html('... <img src="cid:footer-signature@my-app"> ...')
     ;
-
-.. versionadded:: 6.1
-
-    The support of embedded images as HTML backgrounds was introduced in Symfony
-    6.1.
-
-.. versionadded:: 6.3
-
-    The support of custom ``cid`` for embedded images was introduced in Symfony 6.3.
 
 .. _mailer-configure-email-globally:
 
@@ -904,11 +994,6 @@ for Twig templates::
         ])
     ;
 
-.. versionadded:: 6.4
-
-    The :method:`Symfony\\Bridge\\Twig\\Mime\\TemplatedEmail::locale` method
-    was introduced in Symfony 6.4.
-
 Then, create the template:
 
 .. code-block:: html+twig
@@ -1029,6 +1114,18 @@ the email contents:
 
     <h1>Welcome {{ email.toName }}!</h1>
     {# ... #}
+
+By default this will create an attachment using the file path as file name:
+``Content-Disposition: inline; name="cid..."; filename="@images/logo.png"``.
+This behavior can be overridden by passing a custom file name as the third argument:
+
+.. code-block:: html+twig
+
+    <img src="{{ email.image('@images/logo.png', 'image/png', 'logo-acme.png') }}" alt="ACME Logo">
+
+.. versionadded:: 7.3
+
+    The third argument of ``email.image()`` was introduced in Symfony 7.3.
 
 .. _mailer-inline-css:
 
@@ -1327,6 +1424,81 @@ key but not a certificate::
         ->toArray()
     );
 
+Signing Messages Globally
+.........................
+
+Instead of creating a signer instance for each email, you can configure a global
+signer that automatically applies to all outgoing messages. This approach
+minimizes repetition and centralizes your configuration for DKIM and S/MIME signing.
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/mailer.yaml
+        framework:
+            mailer:
+                dkim_signer:
+                    key: 'file://%kernel.project_dir%/var/certificates/dkim.pem'
+                    domain: 'symfony.com'
+                    select: 's1'
+                smime_signer:
+                    key: '%kernel.project_dir%/var/certificates/smime.key'
+                    certificate: '%kernel.project_dir%/var/certificates/smime.crt'
+                    passphrase: ''
+
+    .. code-block:: xml
+
+        <!-- config/packages/mailer.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                https://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/symfony https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+            <!-- ... -->
+            <framework:config>
+                <framework:mailer>
+                    <framework:dkim-signer>
+                        <framework:key>file://%kernel.project_dir%/var/certificates/dkim.pem</framework:key>
+                        <framework:domain>symfony.com</framework:domain>
+                        <framework:select>s1</framework:select>
+                    </framework:dkim-signer>
+                    <framework:smime-signer>
+                        <framework:key>%kernel.project_dir%/var/certificates/smime.pem</framework:key>
+                        <framework:certificate>%kernel.project_dir%/var/certificates/smime.crt</framework:certificate>
+                        <framework:passphrase></framework:passphrase>
+                    </framework:smime-signer>
+                </framework:mailer>
+            </framework:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/mailer.php
+        use Symfony\Config\FrameworkConfig;
+
+        return static function (FrameworkConfig $framework): void {
+            $mailer = $framework->mailer();
+            $mailer->dsn('%env(MAILER_DSN)%');
+            $mailer->dkimSigner()
+                    ->key('file://%kernel.project_dir%/var/certificates/dkim.pem')
+                    ->domain('symfony.com')
+                    ->select('s1');
+
+            $mailer->smimeSigner()
+                    ->key('%kernel.project_dir%/var/certificates/smime.key')
+                    ->certificate('%kernel.project_dir%/var/certificates/smime.crt')
+                    ->passphrase('')
+            ;
+        };
+
+.. versionadded:: 7.3
+
+    Global message signing was introduced in Symfony 7.3.
+
 Encrypting Messages
 ~~~~~~~~~~~~~~~~~~~
 
@@ -1367,6 +1539,86 @@ and it will select the appropriate certificate depending on the ``To`` option::
 
     $firstEncryptedEmail = $encrypter->encrypt($firstEmail);
     $secondEncryptedEmail = $encrypter->encrypt($secondEmail);
+
+Encrypting Messages Globally
+............................
+
+Instead of creating a new encrypter for each email, you can configure a global S/MIME
+encrypter that automatically applies to all outgoing messages:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/mailer.yaml
+        framework:
+            mailer:
+                smime_encrypter:
+                    repository: App\Security\LocalFileCertificateRepository
+
+    .. code-block:: xml
+
+        <!-- config/packages/mailer.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                https://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/symfony https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+            <!-- ... -->
+            <framework:config>
+                <framework:mailer>
+                    <framework:smime-encrypter>
+                        <framework:repository>App\Security\LocalFileCertificateRepository</framework:repository>
+                    </framework:smime-encrypter>
+                </framework:mailer>
+            </framework:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/mailer.php
+        use App\Security\LocalFileCertificateRepository;
+        use Symfony\Config\FrameworkConfig;
+
+        return static function (FrameworkConfig $framework): void {
+            $mailer = $framework->mailer();
+            $mailer->smimeEncrypter()
+                    ->repository(LocalFileCertificateRepository::class)
+            ;
+        };
+
+The ``repository`` option is the ID of a service that implements
+:class:`Symfony\\Component\\Mailer\\EventListener\\SmimeCertificateRepositoryInterface`.
+This interface requires only one method: ``findCertificatePathFor()``, which must
+return the file path to the certificate associated with the given email address::
+
+    namespace App\Security;
+
+    use Symfony\Component\DependencyInjection\Attribute\Autowire;
+    use Symfony\Component\Mailer\EventListener\SmimeCertificateRepositoryInterface;
+
+    class LocalFileCertificateRepository implements SmimeCertificateRepositoryInterface
+    {
+        public function __construct(
+            #[Autowire(param: 'kernel.project_dir')]
+            private readonly string $projectDir
+        ){}
+
+        public function findCertificatePathFor(string $email): ?string
+        {
+            $hash = hash('sha256', strtolower(trim($email)));
+            $path = sprintf('%s/storage/%s.crt', $this->projectDir, $hash);
+
+            return file_exists($path) ? $path : null;
+        }
+    }
+
+.. versionadded:: 7.3
+
+    Global message encryption configuration was introduced in Symfony 7.3.
 
 .. _multiple-email-transports:
 
@@ -1502,11 +1754,6 @@ the "rendering" of the email (computed headers, body rendering, ...) is also
 deferred and will only happen just before the email is sent by the Messenger
 handler.
 
-.. versionadded:: 6.2
-
-    The following example about rendering the email before calling
-    ``$mailer->send($email)`` works as of Symfony 6.2.
-
 When sending an email asynchronously, its instance must be serializable.
 This is always the case for :class:`Symfony\\Component\\Mailer\\Mailer`
 instances, but when sending a
@@ -1580,21 +1827,12 @@ disable asynchronous delivery.
     an open connection to the SMTP server in between sending emails.
     You can do so by using the ``stop()`` method.
 
-.. versionadded:: 6.1
-
-    The :method:`Symfony\\Component\\Mailer\\Transport\\Smtp\\SmtpTransport::stop`
-    method was made public in Symfony 6.1.
-
 You can also select the transport by adding an ``X-Bus-Transport`` header (which
 will be removed automatically from the final message)::
 
     // Use the bus transport "app.another_bus":
     $email->getHeaders()->addTextHeader('X-Bus-Transport', 'app.another_bus');
     $mailer->send($email);
-
-.. versionadded:: 6.2
-
-    The ``X-Bus-Transport`` header support was introduced in Symfony 6.2.
 
 Adding Tags and Metadata to Emails
 ----------------------------------
@@ -1624,6 +1862,7 @@ The following transports currently support tags and metadata:
 
 * Brevo
 * Mailgun
+* Mailtrap
 * Mandrill
 * Postmark
 * Sendgrid
@@ -1631,22 +1870,15 @@ The following transports currently support tags and metadata:
 The following transports only support tags:
 
 * MailPace
+* Resend
 
 The following transports only support metadata:
 
 * Amazon SES (note that Amazon refers to this feature as "tags", but Symfony
   calls it "metadata" because it contains a key and a value)
 
-.. versionadded:: 6.1
-
-    Metadata support for Amazon SES was introduced in Symfony 6.1.
-
 Draft Emails
 ------------
-
-.. versionadded:: 6.1
-
-    ``Symfony\Component\Mime\DraftEmail`` was introduced in 6.1.
 
 :class:`Symfony\\Component\\Mime\\DraftEmail` is a special instance of
 :class:`Symfony\\Component\\Mime\\Email`. Its purpose is to build up an email
@@ -1672,7 +1904,7 @@ Here's an example of making one available to download::
         {
             $message = (new DraftEmail())
                 ->html($this->renderView(/* ... */))
-                ->attach(/* ... */)
+                ->addPart(/* ... */)
             ;
 
             $response = new Response($message->toString());
@@ -1719,10 +1951,6 @@ the email is sent::
         $event->addStamp(new SomeMessengerStamp());
     }
 
-.. versionadded:: 6.2
-
-    Methods ``addStamp()`` and ``getStamps()`` were introduced in Symfony 6.2.
-
 If you want to stop the Message from being sent, call ``reject()`` (it will
 also stop the event propagation)::
 
@@ -1732,10 +1960,6 @@ also stop the event propagation)::
     {
         $event->reject();
     }
-
-.. versionadded:: 6.3
-
-    The ``reject()`` method was introduced in Symfony 6.3.
 
 Execute this command to find out which listeners are registered for this event
 and their priorities:
@@ -1750,10 +1974,6 @@ SentMessageEvent
 ~~~~~~~~~~~~~~~~
 
 **Event Class**: :class:`Symfony\\Component\\Mailer\\Event\\SentMessageEvent`
-
-.. versionadded:: 6.2
-
-    The ``SentMessageEvent`` event was introduced in Symfony 6.2.
 
 ``SentMessageEvent`` allows you to act on the :class:`Symfony\\Component\\\Mailer\\\SentMessage`
 class to access the original message (``getOriginalMessage()``) and some
@@ -1783,10 +2003,6 @@ FailedMessageEvent
 ~~~~~~~~~~~~~~~~~~
 
 **Event Class**: :class:`Symfony\\Component\\Mailer\\Event\\FailedMessageEvent`
-
-.. versionadded:: 6.2
-
-    The ``FailedMessageEvent`` event was introduced in Symfony 6.2.
 
 ``FailedMessageEvent`` allows acting on the initial message in case of a failure
 and some :ref:`debugging information <mailer-debugging-emails>` (``getDebug()``)
@@ -1842,10 +2058,6 @@ to test if sending emails works correctly:
 
 This command bypasses the :doc:`Messenger bus </messenger>`, if configured, to
 ease testing emails even when the Messenger consumer is not running.
-
-.. versionadded:: 6.2
-
-    The ``mailer:test`` command was introduced in Symfony 6.2.
 
 Disabling Delivery
 ~~~~~~~~~~~~~~~~~~
@@ -1949,6 +2161,75 @@ a specific address, instead of the *real* address:
             ;
         };
 
+Use the ``allowed_recipients`` option to specify exceptions to the behavior defined
+in the ``recipients`` option; allowing emails directed to these specific recipients
+to maintain their original destination:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/mailer.yaml
+        when@dev:
+            framework:
+                mailer:
+                    envelope:
+                        recipients: ['youremail@example.com']
+                        allowed_recipients:
+                            - 'internal@example.com'
+                            # you can also use regular expression to define allowed recipients
+                            - 'internal-.*@example.(com|fr)'
+
+    .. code-block:: xml
+
+        <!-- config/packages/mailer.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                https://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/symfony https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+            <!-- ... -->
+            <framework:config>
+                <framework:mailer>
+                    <framework:envelope>
+                        <framework:recipient>youremail@example.com</framework:recipient>
+                        <framework:allowed-recipient>internal@example.com</framework:allowed-recipient>
+                        <!-- you can also use regular expression to define allowed recipients -->
+                        <framework:allowed-recipient>internal-.*@example.(com|fr)</framework:allowed-recipient>
+                    </framework:envelope>
+                </framework:mailer>
+            </framework:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/mailer.php
+        use Symfony\Config\FrameworkConfig;
+
+        return static function (FrameworkConfig $framework): void {
+            // ...
+            $framework->mailer()
+                ->envelope()
+                    ->recipients(['youremail@example.com'])
+                    ->allowedRecipients([
+                        'internal@example.com',
+                        // you can also use regular expression to define allowed recipients
+                        'internal-.*@example.(com|fr)',
+                    ])
+            ;
+        };
+
+With this configuration, all emails will be sent to ``youremail@example.com``,
+except for those sent to ``internal@example.com``, ``internal-monitoring@example.fr``,
+etc., which will receive emails as usual.
+
+.. versionadded:: 7.1
+
+    The ``allowed_recipients`` option was introduced in Symfony 7.1.
+
 Write a Functional Test
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1987,7 +2268,9 @@ the :class:`Symfony\\Bundle\\FrameworkBundle\\Test\\MailerAssertionsTrait`::
    following the redirection and the message will be lost from the mailer event
    handler.
 
+.. _`AhaSend`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/AhaSend/README.md
 .. _`Amazon SES`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Amazon/README.md
+.. _`Azure`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Azure/README.md
 .. _`App Password`: https://support.google.com/accounts/answer/185833
 .. _`Brevo`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Brevo/README.md
 .. _`default_socket_timeout`: https://www.php.net/manual/en/filesystem.configuration.php#ini.default-socket-timeout
@@ -2004,11 +2287,16 @@ the :class:`Symfony\\Bundle\\FrameworkBundle\\Test\\MailerAssertionsTrait`::
 .. _`Mailgun`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Mailgun/README.md
 .. _`Mailjet`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Mailjet/README.md
 .. _`Markdown syntax`: https://commonmark.org/
+.. _`Mailomat`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Mailomat/README.md
 .. _`MailPace`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/MailPace/README.md
 .. _`OpenSSL PHP extension`: https://www.php.net/manual/en/book.openssl.php
 .. _`PEM encoded`: https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail
+.. _`Postal`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Postal/README.md
 .. _`Postmark`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Postmark/README.md
+.. _`Mailtrap`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Mailtrap/README.md
+.. _`Resend`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Resend/README.md
 .. _`RFC 3986`: https://www.ietf.org/rfc/rfc3986.txt
 .. _`S/MIME`: https://en.wikipedia.org/wiki/S/MIME
 .. _`Scaleway`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Scaleway/README.md
 .. _`SendGrid`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Sendgrid/README.md
+.. _`Sweego`: https://github.com/symfony/symfony/blob/{version}/src/Symfony/Component/Mailer/Bridge/Sweego/README.md

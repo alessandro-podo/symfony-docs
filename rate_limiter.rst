@@ -216,8 +216,25 @@ at a rate of another 500 requests every 15 minutes. If you don't make that
 number of requests, the unused ones don't accumulate (the ``limit`` option
 prevents that number from being higher than 5,000).
 
+.. tip::
+
+    All rate-limiters are tagged with the ``rate_limiter`` tag, so you can
+    find them with a :doc:`tagged iterator </service_container/tags>` or
+    :doc:`locator </service_container/service_subscribers_locators>`.
+
+    .. versionadded:: 7.1
+
+        The automatic addition of the ``rate_limiter`` tag was introduced
+        in Symfony 7.1.
+
 Rate Limiting in Action
 -----------------------
+
+.. versionadded:: 7.3
+
+    :class:`Symfony\\Component\\RateLimiter\\RateLimiterFactoryInterface` was
+    added and should now be used for autowiring instead of
+    :class:`Symfony\\Component\\RateLimiter\\RateLimiterFactory`.
 
 After having installed and configured the rate limiter, inject it in any service
 or controller and call the ``consume()`` method to try to consume a given number
@@ -231,13 +248,13 @@ the number of requests to the API::
     use Symfony\Component\HttpFoundation\Request;
     use Symfony\Component\HttpFoundation\Response;
     use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
-    use Symfony\Component\RateLimiter\RateLimiterFactory;
+    use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
     class ApiController extends AbstractController
     {
         // if you're using service autowiring, the variable name must be:
         // "rate limiter name" (in camelCase) + "Limiter" suffix
-        public function index(Request $request, RateLimiterFactory $anonymousApiLimiter): Response
+        public function index(Request $request, RateLimiterFactoryInterface $anonymousApiLimiter): Response
         {
             // create a limiter based on a unique identifier of the client
             // (e.g. the client's IP address, a username/email, an API key, etc.)
@@ -280,11 +297,11 @@ using the ``reserve()`` method::
     use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
     use Symfony\Component\HttpFoundation\Request;
     use Symfony\Component\HttpFoundation\Response;
-    use Symfony\Component\RateLimiter\RateLimiterFactory;
+    use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
     class ApiController extends AbstractController
     {
-        public function registerUser(Request $request, RateLimiterFactory $authenticatedApiLimiter): Response
+        public function registerUser(Request $request, RateLimiterFactoryInterface $authenticatedApiLimiter): Response
         {
             $apiKey = $request->headers->get('apikey');
             $limiter = $authenticatedApiLimiter->create($apiKey);
@@ -321,11 +338,6 @@ processes by reserving unused tokens.
             $limit->wait();
         } while (!$limit->isAccepted());
 
-.. versionadded:: 6.4
-
-    The support for the ``reserve()`` method for the ``SlidingWindow`` strategy
-    was introduced in Symfony 6.4.
-
 Exposing the Rate Limiter Status
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -344,11 +356,11 @@ the :class:`Symfony\\Component\\RateLimiter\\Reservation` object returned by the
     use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
     use Symfony\Component\HttpFoundation\Request;
     use Symfony\Component\HttpFoundation\Response;
-    use Symfony\Component\RateLimiter\RateLimiterFactory;
+    use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
     class ApiController extends AbstractController
     {
-        public function index(Request $request, RateLimiterFactory $anonymousApiLimiter): Response
+        public function index(Request $request, RateLimiterFactoryInterface $anonymousApiLimiter): Response
         {
             $limiter = $anonymousApiLimiter->create($request->getClientIp());
             $limit = $limiter->consume();
@@ -370,19 +382,6 @@ the :class:`Symfony\\Component\\RateLimiter\\Reservation` object returned by the
             return $response;
         }
     }
-
-.. versionadded:: 6.4
-
-    The :method:`Symfony\\Component\\RateLimiter\\Policy\\SlidingWindow::calculateTimeForTokens`
-    method was introduced in Symfony 6.4.
-
-.. deprecated:: 6.4
-
-    The :method:`Symfony\\Component\\RateLimiter\\Policy\\SlidingWindow::getRetryAfter`
-    method is deprecated since Symfony 6.4. Prior to this version, the
-    ``getRetryAfter()`` method must be used instead of the
-    :method:`Symfony\\Component\\RateLimiter\\Policy\\SlidingWindow::calculateTimeForTokens`
-    method.
 
 .. _rate-limiter-storage:
 
@@ -468,9 +467,10 @@ simultaneous requests (e.g. three servers of a company hitting your API at the
 same time). Rate limiters use :doc:`locks </lock>` to protect their operations
 against these race conditions.
 
-By default, Symfony uses the global lock configured by ``framework.lock``, but
-you can use a specific :ref:`named lock <lock-named-locks>` via the
-``lock_factory`` option (or none at all):
+By default, if the :doc:`lock </lock>` component is installed, Symfony uses the
+global lock configured by ``framework.lock``, but you can use a specific
+:ref:`named lock <lock-named-locks>` via the ``lock_factory`` option (or none
+at all):
 
 .. configuration-block::
 
@@ -540,6 +540,129 @@ you can use a specific :ref:`named lock <lock-named-locks>` via the
                     ->lockFactory(null)
                 ;
         };
+
+.. versionadded:: 7.3
+
+    Before Symfony 7.3, configuring a rate limiter and using the default configured
+    lock factory (``lock.factory``) failed if the Symfony Lock component was not
+    installed in the application.
+
+Compound Rate Limiter
+---------------------
+
+.. versionadded:: 7.3
+
+    Support for configuring compound rate limiters was introduced in Symfony 7.3.
+
+You can configure multiple rate limiters to work together:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/rate_limiter.yaml
+        framework:
+            rate_limiter:
+                two_per_minute:
+                    policy: 'fixed_window'
+                    limit: 2
+                    interval: '1 minute'
+                five_per_hour:
+                    policy: 'fixed_window'
+                    limit: 5
+                    interval: '1 hour'
+                contact_form:
+                    policy: 'compound'
+                    limiters: [two_per_minute, five_per_hour]
+
+    .. code-block:: xml
+
+        <!-- config/packages/rate_limiter.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                https://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/symfony
+                https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+            <framework:config>
+                <framework:rate-limiter>
+                    <framework:limiter name="two_per_minute"
+                        policy="fixed_window"
+                        limit="2"
+                        interval="1 minute"
+                    />
+
+                    <framework:limiter name="five_per_hour"
+                        policy="fixed_window"
+                        limit="5"
+                        interval="1 hour"
+                    />
+
+                    <framework:limiter name="contact_form"
+                        policy="compound"
+                    >
+                        <limiter>two_per_minute</limiter>
+                        <limiter>five_per_hour</limiter>
+                    </framework:limiter>
+                </framework:rate-limiter>
+            </framework:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/rate_limiter.php
+        use Symfony\Config\FrameworkConfig;
+
+        return static function (FrameworkConfig $framework): void {
+            $framework->rateLimiter()
+                ->limiter('two_per_minute')
+                    ->policy('fixed_window')
+                    ->limit(2)
+                    ->interval('1 minute')
+                ;
+
+            $framework->rateLimiter()
+                ->limiter('two_per_minute')
+                    ->policy('fixed_window')
+                    ->limit(5)
+                    ->interval('1 hour')
+                ;
+
+            $framework->rateLimiter()
+                ->limiter('contact_form')
+                    ->policy('compound')
+                    ->limiters(['two_per_minute', 'five_per_hour'])
+                ;
+        };
+
+Then, inject and use as normal::
+
+    // src/Controller/ContactController.php
+    namespace App\Controller;
+
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+    use Symfony\Component\HttpFoundation\Request;
+    use Symfony\Component\HttpFoundation\Response;
+    use Symfony\Component\RateLimiter\RateLimiterFactory;
+
+    class ContactController extends AbstractController
+    {
+        public function registerUser(Request $request, RateLimiterFactoryInterface $contactFormLimiter): Response
+        {
+            $limiter = $contactFormLimiter->create($request->getClientIp());
+
+            if (false === $limiter->consume(1)->isAccepted()) {
+                // either of the two limiters has been reached
+            }
+
+            // ...
+        }
+
+        // ...
+    }
 
 .. _`DoS attacks`: https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
 .. _`Apache mod_ratelimit`: https://httpd.apache.org/docs/current/mod/mod_ratelimit.html

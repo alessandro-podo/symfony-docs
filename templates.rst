@@ -395,19 +395,6 @@ gives you access to these variables:
 ``app.enabled_locales``
     The locales enabled in the application.
 
-.. versionadded:: 6.2
-
-    The ``app.current_route`` and ``app.current_route_parameters`` variables
-    were introduced in Symfony 6.2.
-
-.. versionadded:: 6.3
-
-    The ``app.locale`` variable was introduced in Symfony 6.3.
-
-.. versionadded:: 6.4
-
-    The ``app.enabled_locales`` variable was introduced in Symfony 6.4.
-
 In addition to the global ``app`` variable injected by Symfony, you can also
 inject variables automatically to all Twig templates as explained in the next
 section.
@@ -616,10 +603,6 @@ to define the template to render::
         }
     }
 
-.. versionadded:: 6.2
-
-    The ``#[Template]`` attribute was introduced in Symfony 6.2.
-
 The :ref:`base AbstractController <the-base-controller-classes-services>` also provides the
 :method:`Symfony\\Bundle\\FrameworkBundle\\Controller\\AbstractController::renderBlock`
 and :method:`Symfony\\Bundle\\FrameworkBundle\\Controller\\AbstractController::renderBlockView`
@@ -659,12 +642,30 @@ This might come handy when dealing with blocks in
 :ref:`templates inheritance <template_inheritance-layouts>` or when using
 `Turbo Streams`_.
 
-.. versionadded:: 6.4
+Similarly, you can use the ``#[Template]`` attribute on the controller to specify
+a block to render::
 
-    The
-    :method:`Symfony\\Bundle\\FrameworkBundle\\Controller\\AbstractController::renderBlock` and
-    :method:`Symfony\\Bundle\\FrameworkBundle\\Controller\\AbstractController::renderBlockView`
-    methods were introduced in Symfony 6.4.
+    // src/Controller/ProductController.php
+    namespace App\Controller;
+
+    use Symfony\Bridge\Twig\Attribute\Template;
+    use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+    use Symfony\Component\HttpFoundation\Response;
+
+    class ProductController extends AbstractController
+    {
+        #[Template('product.html.twig', block: 'price_block')]
+        public function price(): array
+        {
+            return [
+                // ...
+            ];
+        }
+    }
+
+.. versionadded:: 7.2
+
+    The ``#[Template]`` attribute's ``block`` argument was introduced in Symfony 7.2.
 
 Rendering a Template in Services
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -739,6 +740,11 @@ provided by Symfony:
                     site_name: 'ACME'
                     theme: 'dark'
 
+                # optionally you can define HTTP headers to add to the response
+                headers:
+                    Content-Type: 'text/html'
+                    foo: 'bar'
+
     .. code-block:: xml
 
         <!-- config/routes.xml -->
@@ -767,6 +773,11 @@ provided by Symfony:
                 <default key="context">
                     <default key="site_name">ACME</default>
                     <default key="theme">dark</default>
+                </default>
+
+                <!-- optionally you can define HTTP headers to add to the response -->
+                <default key="headers">
+                    <default key="Content-Type">text/html</default>
                 </default>
             </route>
         </routes>
@@ -798,10 +809,19 @@ provided by Symfony:
                     'context' => [
                         'site_name' => 'ACME',
                         'theme' => 'dark',
+                        ],
+
+                    // optionally you can define HTTP headers to add to the response
+                    'headers' => [
+                        'Content-Type' => 'text/html',
                     ]
                 ])
             ;
         };
+
+.. versionadded:: 7.2
+
+    The ``headers`` option was introduced in Symfony 7.2.
 
 Checking if a Template Exists
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -850,8 +870,19 @@ errors. It's useful to run it before deploying your application to production
     $ php bin/console lint:twig templates/article/recent_list.html.twig
 
     # you can also show the deprecated features used in your templates
-    # (only the first deprecation is shown, so run multiple times to catch all)
     $ php bin/console lint:twig --show-deprecations templates/email/
+
+    # you can also excludes directories
+    $ php bin/console lint:twig templates/ --excludes=data_collector --excludes=dev_tool
+
+.. versionadded:: 7.1
+
+    The option to exclude directories was introduced in Symfony 7.1.
+
+.. versionadded:: 7.3
+
+    Before Symfony 7.3, the ``--show-deprecations`` option only displayed the
+    first deprecation found, so you had to run the command repeatedly.
 
 When running the linter inside `GitHub Actions`_, the output is automatically
 adapted to the format required by GitHub, but you can force that format too:
@@ -917,10 +948,6 @@ depending on your needs:
             {{ article.title }}
         </a>
     {% endfor %}
-
-.. versionadded:: 6.3
-
-    The option to use named arguments in ``dump()`` was introduced in Symfony 6.3.
 
 To avoid leaking sensitive information, the ``dump()`` function/tag is only
 available in the ``dev`` and ``test`` :ref:`configuration environments <configuration-environments>`.
@@ -1526,23 +1553,20 @@ as currency:
     {# pass in the 3 optional arguments #}
     {{ product.price|price(2, ',', '.') }}
 
-Create a class that extends ``AbstractExtension`` and fill in the logic::
+.. _templates-twig-filter-attribute:
+
+Create a regular PHP class with a method that contains the filter logic. Then,
+add the ``#[AsTwigFilter]`` attribute to define the name and options of
+the Twig filter::
 
     // src/Twig/AppExtension.php
     namespace App\Twig;
 
-    use Twig\Extension\AbstractExtension;
-    use Twig\TwigFilter;
+    use Twig\Attribute\AsTwigFilter;
 
-    class AppExtension extends AbstractExtension
+    class AppExtension
     {
-        public function getFilters(): array
-        {
-            return [
-                new TwigFilter('price', [$this, 'formatPrice']),
-            ];
-        }
-
+        #[AsTwigFilter('price')]
         public function formatPrice(float $number, int $decimals = 0, string $decPoint = '.', string $thousandsSep = ','): string
         {
             $price = number_format($number, $decimals, $decPoint, $thousandsSep);
@@ -1552,24 +1576,19 @@ Create a class that extends ``AbstractExtension`` and fill in the logic::
         }
     }
 
-If you want to create a function instead of a filter, define the
-``getFunctions()`` method::
+.. _templates-twig-function-attribute:
+
+If you want to create a function instead of a filter, use the
+``#[AsTwigFunction]`` attribute::
 
     // src/Twig/AppExtension.php
     namespace App\Twig;
 
-    use Twig\Extension\AbstractExtension;
-    use Twig\TwigFunction;
+    use Twig\Attribute\AsTwigFunction;
 
-    class AppExtension extends AbstractExtension
+    class AppExtension
     {
-        public function getFunctions(): array
-        {
-            return [
-                new TwigFunction('area', [$this, 'calculateArea']),
-            ];
-        }
-
+        #[AsTwigFunction('area')]
         public function calculateArea(int $width, int $length): int
         {
             return $width * $length;
@@ -1580,6 +1599,18 @@ If you want to create a function instead of a filter, define the
 
     Along with custom filters and functions, you can also register
     `global variables`_.
+
+.. versionadded:: 7.3
+
+    Support for the ``#[AsTwigFilter]``, ``#[AsTwigFunction]`` and ``#[AsTwigTest]``
+    attributes was introduced in Symfony 7.3. Previously, you had to extend the
+    ``AbstractExtension`` class, and override the ``getFilters()`` and ``getFunctions()``
+    methods.
+
+If you're using the :ref:`default services.yaml configuration <service-container-services-load-example>`,
+the :ref:`service autoconfiguration <services-autoconfigure>` feature will enable
+this class as a Twig extension. Otherwise, you need to define a service manually
+and :doc:`tag it </service_container/tags>` with the ``twig.attribute_extension`` tag.
 
 Register an Extension as a Service
 ..................................
@@ -1604,10 +1635,11 @@ this command to confirm that your new filter was successfully registered:
 Creating Lazy-Loaded Twig Extensions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Including the code of the custom filters/functions in the Twig extension class
-is the simplest way to create extensions. However, Twig must initialize all
-extensions before rendering any template, even if the template doesn't use an
-extension.
+When :ref:`using attributes to extend Twig <templates-twig-filter-attribute>`,
+the **Twig extensions are already lazy-loaded** and you don't have to do anything
+else. However, if your Twig extensions follow the **legacy approach** of extending
+the ``AbstractExtension`` class, Twig initializes all the extensions before
+rendering any template, even if they are not used.
 
 If extensions don't define dependencies (i.e. if you don't inject services in
 them) performance is not affected. However, if extensions define lots of complex

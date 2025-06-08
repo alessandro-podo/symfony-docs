@@ -114,6 +114,8 @@ You can configure the options passed to the ``other_options`` argument of
     and ``suppress_errors``) are only supported on Windows operating systems.
     Check out the `PHP documentation for proc_open()`_ before using them.
 
+.. _process-using-features-from-the-os-shell:
+
 Using Features From the OS Shell
 --------------------------------
 
@@ -418,10 +420,6 @@ instead::
 Executing a PHP Child Process with the Same Configuration
 ---------------------------------------------------------
 
-.. versionadded:: 6.4
-
-    The ``PhpSubprocess`` helper was introduced in Symfony 6.4.
-
 When you start a PHP process, it uses the default configuration defined in
 your ``php.ini`` file. You can bypass these options with the ``-d`` command line
 option. For example, if ``memory_limit`` is set to ``256M``, you can disable this
@@ -514,6 +512,20 @@ When running a program asynchronously, you can send it POSIX signals with the
 
     // will send a SIGKILL to the process
     $process->signal(SIGKILL);
+
+You can make the process ignore signals by using the
+:method:`Symfony\\Component\\Process\\Process::setIgnoredSignals`
+method. The given signals won't be propagated to the child process::
+
+    use Symfony\Component\Process\Process;
+
+    $process = new Process(['find', '/', '-name', 'rabbit']);
+    $process->setIgnoredSignals([SIGKILL, SIGUSR1]);
+
+.. versionadded:: 7.1
+
+    The :method:`Symfony\\Component\\Process\\Process::setIgnoredSignals`
+    method was introduced in Symfony 7.1.
 
 Process Pid
 -----------

@@ -5,11 +5,6 @@ Attributes are the successor of annotations since PHP 8. Attributes are native
 to the language and Symfony takes full advantage of them across the framework
 and its different components.
 
-.. deprecated:: 6.4
-
-    Annotations across the framework are deprecated since Symfony 6.4, you must
-    only use attributes instead.
-
 Doctrine Bridge
 ~~~~~~~~~~~~~~~
 
@@ -40,12 +35,21 @@ Dependency Injection
 * :doc:`AutowireDecorated </service_container/service_decoration>`
 * :ref:`AutowireIterator <service-locator_autowire-iterator>`
 * :ref:`AutowireLocator <service-locator_autowire-locator>`
+* :ref:`AutowireMethodOf <autowiring_closures>`
 * :ref:`AutowireServiceClosure <autowiring_closures>`
 * :ref:`Exclude <service-psr4-loader>`
+* :ref:`Lazy <lazy-services_configuration>`
 * :ref:`TaggedIterator <tags_reference-tagged-services>`
 * :ref:`TaggedLocator <service-subscribers-locators_defining-service-locator>`
 * :ref:`Target <autowiring-multiple-implementations-same-type>`
 * :ref:`When <service-container_limiting-to-env>`
+* :ref:`WhenNot <service-container_limiting-to-env>`
+
+.. deprecated:: 7.1
+
+    The :class:`Symfony\\Component\\DependencyInjection\\Attribute\\TaggedIterator`
+    and :class:`Symfony\\Component\\DependencyInjection\\Attribute\\TaggedLocator`
+    attributes were deprecated in Symfony 7.1.
 
 EventDispatcher
 ~~~~~~~~~~~~~~~
@@ -67,6 +71,7 @@ HttpKernel
 * :ref:`MapQueryParameter <controller_map-request>`
 * :ref:`MapQueryString <controller_map-request>`
 * :ref:`MapRequestPayload <controller_map-request>`
+* :ref:`MapUploadedFile <controller_map-uploaded-file>`
 * :ref:`ValueResolver <managing-value-resolvers>`
 * :ref:`WithHttpStatus <framework_exceptions>`
 * :ref:`WithLogLevel <framework_exceptions>`
@@ -74,6 +79,7 @@ HttpKernel
 Messenger
 ~~~~~~~~~
 
+* :ref:`AsMessage <messenger-message-attribute>`
 * :ref:`AsMessageHandler <messenger-handler>`
 
 RemoteEvent
@@ -97,6 +103,7 @@ Security
 ~~~~~~~~
 
 * :ref:`CurrentUser <security-json-login>`
+* :ref:`IsCsrfTokenValid <csrf-controller-attributes>`
 * :ref:`IsGranted <security-securing-controller-attributes>`
 
 .. _reference-attributes-serializer:
@@ -116,6 +123,9 @@ Twig
 ~~~~
 
 * :ref:`Template <templates-template-attribute>`
+* :ref:`AsTwigFilter <templates-twig-filter-attribute>`
+* :ref:`AsTwigFunction <templates-twig-function-attribute>`
+* ``AsTwigTest``
 
 Symfony UX
 ~~~~~~~~~~

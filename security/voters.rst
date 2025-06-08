@@ -40,13 +40,19 @@ or extend :class:`Symfony\\Component\\Security\\Core\\Authorization\\Voter\\Vote
 which makes creating a voter even easier::
 
     use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+    use Symfony\Component\Security\Core\Authorization\Voter\Vote;
     use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
 
     abstract class Voter implements VoterInterface
     {
         abstract protected function supports(string $attribute, mixed $subject): bool;
-        abstract protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool;
+        abstract protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool;
     }
+
+.. versionadded:: 7.3
+    
+    The ``$vote`` argument of the ``voteOnAttribute()`` method was introduced
+    in Symfony 7.3.
 
 .. _how-to-use-the-voter-in-a-controller:
 
@@ -118,10 +124,6 @@ calls out to the "voter" system. Right now, no voters will vote on whether or no
 the user can "view" or "edit" a ``Post``. But you can create your *own* voter that
 decides this using whatever logic you want.
 
-.. versionadded:: 6.2
-
-    The ``#[IsGranted]`` attribute was introduced in Symfony 6.2.
-
 Creating the custom Voter
 -------------------------
 
@@ -136,6 +138,7 @@ would look like this::
     use App\Entity\Post;
     use App\Entity\User;
     use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+    use Symfony\Component\Security\Core\Authorization\Voter\Vote;
     use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
     class PostVoter extends Voter
@@ -159,12 +162,13 @@ would look like this::
             return true;
         }
 
-        protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
+        protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
         {
             $user = $token->getUser();
 
             if (!$user instanceof User) {
                 // the user must be logged in; if not, deny access
+                $vote?->addReason('The user is not logged in.');
                 return false;
             }
 
@@ -174,7 +178,7 @@ would look like this::
 
             return match($attribute) {
                 self::VIEW => $this->canView($post, $user),
-                self::EDIT => $this->canEdit($post, $user),
+                self::EDIT => $this->canEdit($post, $user, $vote),
                 default => throw new \LogicException('This code should not be reached!')
             };
         }
@@ -190,10 +194,19 @@ would look like this::
             return !$post->isPrivate();
         }
 
-        private function canEdit(Post $post, User $user): bool
+        private function canEdit(Post $post, User $user, ?Vote $vote): bool
         {
-            // this assumes that the Post object has a `getOwner()` method
-            return $user === $post->getOwner();
+            // this assumes that the Post object has a `getAuthor()` method
+            if ($user === $post->getAuthor()) {
+                return true;
+            }
+
+            $vote?->addReason(sprintf(
+                'The logged in user (username: %s) is not the author of this post (id: %d).',
+                $user->getUsername(), $post->getId()
+            ));
+
+            return false;
         }
     }
 
@@ -211,11 +224,12 @@ To recap, here's what's expected from the two abstract methods:
     return ``true`` if the attribute is ``view`` or ``edit`` and if the object is
     a ``Post`` instance.
 
-``voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token)``
+``voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null)``
     If you return ``true`` from ``supports()``, then this method is called. Your
     job is to return ``true`` to allow access and ``false`` to deny access.
-    The ``$token`` can be used to find the current user object (if any). In this
-    example, all of the complex business logic is included to determine access.
+    The ``$token`` can be used to find the current user object (if any).
+    The ``$vote`` argument can be used to provide an explanation for the vote.
+    This explanation is included in log messages and on exception pages.
 
 .. _declaring-the-voter-as-a-service:
 
@@ -252,7 +266,7 @@ with ``ROLE_SUPER_ADMIN``::
         ) {
         }
 
-        protected function voteOnAttribute($attribute, mixed $subject, TokenInterface $token): bool
+        protected function voteOnAttribute($attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
         {
             // ...
 

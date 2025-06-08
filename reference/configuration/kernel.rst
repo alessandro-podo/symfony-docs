@@ -25,11 +25,6 @@ method of the kernel class, which you can override to return a different value.
 You can also change the build directory by defining an environment variable
 named ``APP_BUILD_DIR`` whose value is the absolute path of the build folder.
 
-.. versionadded:: 6.4
-
-    The support of the ``APP_BUILD_DIR`` environment variable was introduced in
-    Symfony 6.4.
-
 ``kernel.bundles``
 ------------------
 
@@ -321,20 +316,12 @@ the application is running in web mode and ``web=1&worker=1`` when running in
 a long-running web server. This parameter can be set by using the
 ``APP_RUNTIME_MODE`` env var.
 
-.. versionadded:: 6.4
-
-    The ``kernel.runtime_mode`` parameter was introduced in Symfony 6.4.
-
 ``kernel.runtime_mode.web``
 ---------------------------
 
 **type**: ``boolean`` **default**: ``%env(bool:default::key:web:default:kernel.runtime_mode:)%``
 
 Whether the application is running in a web environment.
-
-.. versionadded:: 6.4
-
-    The ``kernel.runtime_mode.web`` parameter was introduced in Symfony 6.4.
 
 ``kernel.runtime_mode.cli``
 ---------------------------
@@ -344,10 +331,6 @@ Whether the application is running in a web environment.
 Whether the application is running in a CLI environment. By default,
 this value is the opposite of the ``kernel.runtime_mode.web`` parameter.
 
-.. versionadded:: 6.4
-
-    The ``kernel.runtime_mode.cli`` parameter was introduced in Symfony 6.4.
-
 ``kernel.runtime_mode.worker``
 ------------------------------
 
@@ -355,10 +338,6 @@ this value is the opposite of the ``kernel.runtime_mode.web`` parameter.
 
 Whether the application is running in a worker/long-running environment. Not all web
 servers support it, and you have to use a long-running web server like `FrankenPHP`_.
-
-.. versionadded:: 6.4
-
-    The ``kernel.runtime_mode.worker`` parameter was introduced in Symfony 6.4.
 
 ``kernel.secret``
 -----------------
